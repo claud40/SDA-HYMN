@@ -19,6 +19,14 @@ import {
 } from 'lucide-react';
 import { Hymn } from '../data/hymns';
 import { hymnAudio } from '../utils/audioPlayer';
+import {
+  TYPOGRAPHY_CONFIG,
+  getStoredTypography,
+  applyTypographyToDOM,
+  TextSizePreference as TextSize,
+  LineSpacingPreference,
+  FontPreference,
+} from '../utils/typography';
 
 interface HymnReaderProps {
   hymn: Hymn;
@@ -33,9 +41,7 @@ interface HymnReaderProps {
   totalHymnsCount: number;
 }
 
-type TextSize = 'standard' | 'large' | 'xlarge' | 'elder';
 type ReaderTheme = 'parchment' | 'white' | 'dark';
-type FontPreference = 'serif' | 'sans';
 
 export const HymnReader: React.FC<HymnReaderProps> = ({
   hymn,
@@ -50,10 +56,10 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
   totalHymnsCount,
 }) => {
   const [textSize, setTextSize] = useState<TextSize>(() => {
-    return (localStorage.getItem('hymnal_text_size') as TextSize) || 'large';
+    return getStoredTypography().textSize;
   });
-  const [lineSpacing, setLineSpacing] = useState<'normal' | 'relaxed' | 'loose'>(() => {
-    return (localStorage.getItem('hymnal_line_spacing') as any) || 'relaxed';
+  const [lineSpacing, setLineSpacing] = useState<LineSpacingPreference>(() => {
+    return getStoredTypography().lineSpacing;
   });
   const [theme, setTheme] = useState<ReaderTheme>(() => {
     const saved = localStorage.getItem('hymnal_reader_theme') as ReaderTheme;
@@ -61,7 +67,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
     return typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'parchment';
   });
   const [fontPref, setFontPref] = useState<FontPreference>(() => {
-    return (localStorage.getItem('hymnal_font_family') as FontPreference) || 'serif';
+    return getStoredTypography().fontFamily;
   });
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [activeNoteIdx, setActiveNoteIdx] = useState<number>(-1);
@@ -85,9 +91,9 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
     return () => window.removeEventListener('hymnal-theme-change', handleAppThemeChange);
   }, []);
 
-  // Sync settings changes (text size, line spacing, font family)
+  // Sync settings and typography changes live from SettingsModal or shortcuts
   useEffect(() => {
-    const handleSettingsChange = (e: any) => {
+    const handleTypographyChange = (e: any) => {
       if (e.detail?.textSize) setTextSize(e.detail.textSize);
       if (e.detail?.lineSpacing) setLineSpacing(e.detail.lineSpacing);
       if (e.detail?.fontFamily) setFontPref(e.detail.fontFamily);
@@ -95,8 +101,12 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
         setIsAutoScrolling(e.detail.autoScrollEnabled);
       }
     };
-    window.addEventListener('hymnal-settings-change', handleSettingsChange);
-    return () => window.removeEventListener('hymnal-settings-change', handleSettingsChange);
+    window.addEventListener('hymnal-typography-change', handleTypographyChange);
+    window.addEventListener('hymnal-settings-change', handleTypographyChange);
+    return () => {
+      window.removeEventListener('hymnal-typography-change', handleTypographyChange);
+      window.removeEventListener('hymnal-settings-change', handleTypographyChange);
+    };
   }, []);
 
   // Keep screen awake while reading (Wake Lock API)
@@ -219,38 +229,32 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
       );
     }
   };
-  const fontSizes = {
-    standard: {
-      verseText: 'text-base leading-relaxed',
-      verseNum: 'text-sm',
-      chorusText: 'text-base leading-relaxed',
-      title: 'text-2xl sm:text-3xl',
-    },
-    large: {
-      verseText: 'text-lg sm:text-xl leading-relaxed sm:leading-loose',
-      verseNum: 'text-base',
-      chorusText: 'text-lg sm:text-xl leading-relaxed sm:leading-loose',
-      title: 'text-3xl sm:text-4xl',
-    },
-    xlarge: {
-      verseText: 'text-xl sm:text-2xl leading-relaxed sm:leading-loose',
-      verseNum: 'text-lg',
-      chorusText: 'text-xl sm:text-2xl leading-relaxed sm:leading-loose',
-      title: 'text-3xl sm:text-5xl',
-    },
-    elder: {
-      verseText: 'text-2xl sm:text-3xl leading-relaxed sm:leading-loose font-medium',
-      verseNum: 'text-xl font-bold',
-      chorusText: 'text-2xl sm:text-3xl leading-relaxed sm:leading-loose font-medium',
-      title: 'text-4xl sm:text-5xl',
-    },
+
+  const handleIncreaseTextSize = () => {
+    const sequence: TextSize[] = ['standard', 'large', 'xlarge', 'elder'];
+    const currIdx = sequence.indexOf(textSize);
+    if (currIdx < sequence.length - 1) {
+      const next = sequence[currIdx + 1];
+      setTextSize(next);
+      applyTypographyToDOM({ textSize: next, lineSpacing, fontFamily: fontPref });
+    }
   };
 
-  const lineSpacingClass = {
-    normal: 'leading-normal',
-    relaxed: 'leading-relaxed sm:leading-loose',
-    loose: 'leading-[2.2] sm:leading-[2.4]',
-  }[lineSpacing];
+  const handleDecreaseTextSize = () => {
+    const sequence: TextSize[] = ['standard', 'large', 'xlarge', 'elder'];
+    const currIdx = sequence.indexOf(textSize);
+    if (currIdx > 0) {
+      const next = sequence[currIdx - 1];
+      setTextSize(next);
+      applyTypographyToDOM({ textSize: next, lineSpacing, fontFamily: fontPref });
+    }
+  };
+
+  const handleToggleFontPref = () => {
+    const next: FontPreference = fontPref === 'serif' ? 'sans' : 'serif';
+    setFontPref(next);
+    applyTypographyToDOM({ textSize, lineSpacing, fontFamily: next });
+  };
 
   const themeStyles = {
     parchment: {
@@ -291,9 +295,10 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
   return (
     <div
       ref={readerContainerRef}
-      className={`fixed inset-0 z-50 flex flex-col overflow-hidden ${theme === 'dark' ? 'dark' : ''} ${themeStyles.wrapper} ${
-        fontPref === 'serif' ? 'font-hymn-serif' : 'font-hymn-sans'
-      }`}
+      style={{
+        fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+      }}
+      className={`fixed inset-0 z-50 flex flex-col overflow-hidden transition-all ${theme === 'dark' ? 'dark' : ''} ${themeStyles.wrapper}`}
     >
       {/* Top Reader Action Bar */}
       <div className={`shrink-0 border-b backdrop-blur-md no-print ${themeStyles.header}`}>
@@ -340,8 +345,8 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
             {/* Font Family Switcher */}
             <button
-              onClick={() => setFontPref(fontPref === 'serif' ? 'sans' : 'serif')}
-              className={`h-9 px-2.5 rounded-xl text-xs font-sans font-medium transition-colors ${themeStyles.btnSecondary}`}
+              onClick={handleToggleFontPref}
+              className={`h-9 px-2.5 rounded-xl text-xs font-sans font-medium transition-colors cursor-pointer ${themeStyles.btnSecondary}`}
               title={fontPref === 'serif' ? 'Switch to Sans-serif font' : 'Switch to Traditional Serif font'}
             >
               <span className="font-bold">{fontPref === 'serif' ? 'Serif' : 'Sans'}</span>
@@ -350,13 +355,9 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
             {/* Text Size Stepper */}
             <div className="flex items-center rounded-xl overflow-hidden border border-stone-300 dark:border-stone-700 text-xs font-sans font-semibold">
               <button
-                onClick={() => {
-                  if (textSize === 'elder') setTextSize('xlarge');
-                  else if (textSize === 'xlarge') setTextSize('large');
-                  else if (textSize === 'large') setTextSize('standard');
-                }}
+                onClick={handleDecreaseTextSize}
                 disabled={textSize === 'standard'}
-                className="h-9 px-2.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 disabled:opacity-40 transition-colors"
+                className="h-9 px-2.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 disabled:opacity-40 transition-colors cursor-pointer"
                 title="Cefyako amalembo (Smaller text)"
                 aria-label="Decrease text size"
               >
@@ -366,13 +367,9 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                 {textSize === 'elder' ? 'XL+' : textSize === 'xlarge' ? 'XL' : textSize === 'large' ? 'LG' : 'MD'}
               </span>
               <button
-                onClick={() => {
-                  if (textSize === 'standard') setTextSize('large');
-                  else if (textSize === 'large') setTextSize('xlarge');
-                  else if (textSize === 'xlarge') setTextSize('elder');
-                }}
+                onClick={handleIncreaseTextSize}
                 disabled={textSize === 'elder'}
-                className="h-9 px-2.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 disabled:opacity-40 transition-colors"
+                className="h-9 px-2.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 disabled:opacity-40 transition-colors cursor-pointer"
                 title="Pangilako amalembo (Larger text for seniors)"
                 aria-label="Increase text size"
               >
@@ -496,8 +493,8 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
           {/* Font Toggle */}
           <button
-            onClick={() => setFontPref(fontPref === 'serif' ? 'sans' : 'serif')}
-            className={`px-2.5 py-1.5 rounded-lg font-sans font-medium shrink-0 transition-colors ${themeStyles.btnSecondary}`}
+            onClick={handleToggleFontPref}
+            className={`px-2.5 py-1.5 rounded-lg font-sans font-medium shrink-0 transition-colors cursor-pointer ${themeStyles.btnSecondary}`}
           >
             <span className="font-bold">{fontPref === 'serif' ? 'Serif' : 'Sans'}</span>
           </button>
@@ -505,13 +502,9 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
           {/* Text Size Stepper */}
           <div className="flex items-center rounded-lg overflow-hidden border border-stone-300 dark:border-stone-700 font-sans font-semibold shrink-0">
             <button
-              onClick={() => {
-                if (textSize === 'elder') setTextSize('xlarge');
-                else if (textSize === 'xlarge') setTextSize('large');
-                else if (textSize === 'large') setTextSize('standard');
-              }}
+              onClick={handleDecreaseTextSize}
               disabled={textSize === 'standard'}
-              className="h-7 px-2 bg-stone-100 dark:bg-stone-800 disabled:opacity-40"
+              className="h-7 px-2 bg-stone-100 dark:bg-stone-800 disabled:opacity-40 cursor-pointer"
               aria-label="Decrease text"
             >
               A-
@@ -520,13 +513,9 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
               {textSize === 'elder' ? 'XL+' : textSize === 'xlarge' ? 'XL' : textSize === 'large' ? 'LG' : 'MD'}
             </span>
             <button
-              onClick={() => {
-                if (textSize === 'standard') setTextSize('large');
-                else if (textSize === 'large') setTextSize('xlarge');
-                else if (textSize === 'xlarge') setTextSize('elder');
-              }}
+              onClick={handleIncreaseTextSize}
               disabled={textSize === 'elder'}
-              className="h-7 px-2 bg-stone-100 dark:bg-stone-800 disabled:opacity-40"
+              className="h-7 px-2 bg-stone-100 dark:bg-stone-800 disabled:opacity-40 cursor-pointer"
               aria-label="Increase text"
             >
               A+
@@ -581,8 +570,13 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
             {/* Title */}
             <h1
-              className={`font-bold tracking-tight text-stone-900 dark:text-stone-100 ${fontSizes[textSize].title}`}
-              style={{ textWrap: 'balance' }}
+              className="font-bold tracking-tight text-stone-900 dark:text-stone-100 transition-all"
+              style={{
+                textWrap: 'balance',
+                fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].titlePx}px`,
+                lineHeight: 1.25,
+                fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+              }}
             >
               {hymn.title}
             </h1>
@@ -612,13 +606,26 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                 <div className="flex items-start gap-3 sm:gap-4">
                   {/* Verse Number Stamp */}
                   <div
-                    className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-serif font-bold text-xs sm:text-sm ${themeStyles.verseNum}`}
+                    className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all ${themeStyles.verseNum}`}
+                    style={{
+                      width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                      height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                      fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
+                      fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                    }}
                   >
                     {verseIndex + 1}
                   </div>
 
                   {/* Verse Lyrics */}
-                  <div className={`space-y-1 sm:space-y-1.5 flex-1 pt-0.5 ${fontSizes[textSize].verseText} ${lineSpacingClass}`}>
+                  <div
+                    className="space-y-1 sm:space-y-1.5 flex-1 pt-0.5 transition-all"
+                    style={{
+                      fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
+                      lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                      fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                    }}
+                  >
                     {verseLines.map((line, lineIndex) => (
                       <p key={lineIndex} className="text-stone-900 dark:text-stone-100">
                         {line}
@@ -636,7 +643,12 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                       <span>{hymn.chorusLabel || 'Icililishi (Chorus)'}</span>
                     </div>
                     <div
-                      className={`space-y-1 italic ${fontSizes[textSize].chorusText} ${lineSpacingClass}`}
+                      className="space-y-1 italic transition-all"
+                      style={{
+                        fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
+                        lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                        fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                      }}
                     >
                       {hymn.chorus.map((line, chorusLineIndex) => (
                         <p key={chorusLineIndex} className="font-medium">

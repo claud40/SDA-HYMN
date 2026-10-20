@@ -19,7 +19,7 @@
 }
 
 .font-hymn-serif {
-  font-family: 'Lora', Georgia, Cambria, serif;
+  font-family: var(--hymn-font-family, 'Lora', Georgia, Cambria, serif);
 }
 
 .font-hymn-sans {

@@ -12,6 +12,7 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { SettingsModal } from './components/SettingsModal';
 import { SplashScreen } from './components/SplashScreen';
 import { applyThemeToDOM, getStoredThemePreference } from './utils/theme';
+import { applyTypographyToDOM, getStoredTypography } from './utils/typography';
 
 export default function App() {
   // Opening splash screen featuring official Adventist logo
@@ -34,9 +35,10 @@ export default function App() {
   // Settings modal
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
-  // Initialize theme on app mount
+  // Initialize theme and typography on app mount
   useEffect(() => {
     applyThemeToDOM(getStoredThemePreference());
+    applyTypographyToDOM(getStoredTypography());
   }, []);
 
   // Native IndexedDB storage for hymns, favorites, and recent history
