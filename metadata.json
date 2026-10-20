@@ -1,0 +1,6 @@
+{
+  "name": "Kristu Mu Nyimbo - Bemba SDA Hymnal",
+  "description": "Modern, elegant digital Bemba Seventh-day Adventist Hymnal interface with fast numeric jump, high-legibility verses, offline favorites, and responsive church worship tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

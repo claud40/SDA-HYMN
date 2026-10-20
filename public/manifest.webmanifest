@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "name": "Kristu Mu Nyimbo — Bemba SDA Hymnal",
+  "short_name": "Nyimbo SDA",
+  "description": "Digital Bemba Seventh-day Adventist Hymnal interface with fast numeric jump, high-legibility verses, and offline hymnbook support.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0F172A",
+  "background_color": "#FAF8F5",
+  "categories": ["books", "lifestyle", "music"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

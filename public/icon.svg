@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#0F172A"/>
+  <!-- Gold outer border -->
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="#D97706" stroke-width="6" stroke-opacity="0.6"/>
+  <!-- Book Spine & Pages -->
+  <path d="M120 140 C190 120, 240 140, 256 160 C272 140, 322 120, 392 140 L392 360 C322 340, 272 360, 256 380 C240 360, 190 340, 120 360 Z" fill="#FAF8F5" stroke="#B45309" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Book center spine line -->
+  <line x1="256" y1="160" x2="256" y2="380" stroke="#78350F" stroke-width="4"/>
+  <!-- Gold Embossed Cross on Left Page -->
+  <rect x="180" y="190" width="16" height="120" rx="3" fill="#B45309"/>
+  <rect x="145" y="225" width="86" height="16" rx="3" fill="#B45309"/>
+  <!-- Musical Clef & Notes on Right Page -->
+  <path d="M310 300 C300 300, 290 290, 290 280 C290 268, 302 260, 314 260 C326 260, 334 268, 334 278 C334 310, 310 324, 302 334 C296 340, 292 350, 298 354 C304 358, 312 354, 316 348 C324 336, 342 322, 342 278 L342 210 L368 200 L368 185 L328 198 L328 274" fill="#B45309"/>
+  <!-- Subtitle Text -->
+  <text x="256" y="425" text-anchor="middle" font-family="Georgia, serif" font-size="28" font-weight="bold" fill="#FBBF24" letter-spacing="3">KRISTU MU NYIMBO</text>
+  <text x="256" y="455" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#94A3B8" letter-spacing="2">BEMBA SDA HYMNAL</text>
+</svg>

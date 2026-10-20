@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kristu Mu Nyimbo — Bemba SDA Hymnal</title>
+    <meta name="description" content="Modern, elegant digital Bemba Seventh-day Adventist Hymnal interface with fast numeric jump, high-legibility verses, offline favorites, and responsive church worship tools." />
+    <meta property="og:title" content="Kristu Mu Nyimbo — Bemba SDA Hymnal" />
+    <meta property="og:description" content="Modern, elegant digital Bemba Seventh-day Adventist Hymnal interface with fast numeric jump, high-legibility verses, offline favorites, and responsive church worship tools." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0F172A" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Nyimbo SDA" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      (function() {
+        try {
+          var pref = localStorage.getItem('hymnal_theme_pref');
+          var isDark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            if (document.body) document.body.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            if (document.body) document.body.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 antialiased selection:bg-amber-200 selection:text-amber-950 transition-colors duration-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
