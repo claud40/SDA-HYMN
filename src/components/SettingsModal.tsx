@@ -26,6 +26,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { Hymn, SAMPLE_HYMNS } from '../data/hymns';
+import { AdventistLogo } from './AdventistLogo';
 import {
   applyThemeToDOM,
   getStoredThemePreference,
@@ -48,6 +49,7 @@ export interface SettingsModalProps {
   onSelectHymn?: (hymn: Hymn) => void;
   onViewFavorites?: () => void;
   onClearRecentHistory?: () => void;
+  onShowSplashScreen?: () => void;
 }
 
 type SettingsTab = 'all' | 'appearance' | 'reading' | 'preferences' | 'about';
@@ -61,6 +63,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSelectHymn,
   onViewFavorites,
   onClearRecentHistory,
+  onShowSplashScreen,
 }) => {
   // Active settings section tab for easy navigation
   const [activeTab, setActiveTab] = useState<SettingsTab>('all');
@@ -904,18 +907,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Expanded About & User Guide Content */}
                 {isAboutExpanded && (
                   <div className="p-4 sm:p-6 rounded-2xl bg-stone-100/70 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700/80 space-y-4 text-xs text-stone-700 dark:text-stone-300 animate-in fade-in duration-150">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold text-sm sm:text-base text-stone-900 dark:text-stone-100">
-                          Kristu Mu Nyimbo
-                        </h3>
+                    <div className="flex items-center gap-3.5 pb-2 border-b border-stone-200/80 dark:border-stone-700/80">
+                      <div className="w-14 h-14 rounded-2xl bg-white border border-amber-500/30 p-1.5 flex items-center justify-center shrink-0 shadow-sm">
+                        <AdventistLogo className="w-full h-full" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-bold text-sm sm:text-base text-stone-900 dark:text-stone-100 truncate">
+                            Kristu Mu Nyimbo
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-md bg-amber-900/10 dark:bg-amber-400/10 text-amber-900 dark:text-amber-400 font-mono text-[10px] font-bold shrink-0">
+                            v2.5.0 PWA
+                          </span>
+                        </div>
                         <p className="text-[11px] text-amber-800 dark:text-amber-400 font-medium">
-                          Bemba Seventh-day Adventist Hymnal
+                          Seventh-day Adventist Church • Bemba Hymnal
+                        </p>
+                        <p className="text-[10px] text-stone-400 mt-0.5">
+                          Zambia Union Conference Publications
                         </p>
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-amber-900/10 dark:bg-amber-400/10 text-amber-900 dark:text-amber-400 font-mono text-[11px] font-bold">
-                        v2.5.0 PWA
-                      </span>
                     </div>
 
                     <p className="text-[11px] sm:text-xs leading-relaxed text-stone-600 dark:text-stone-400">
@@ -994,6 +1005,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <li>• <strong>Application Engineering:</strong> [Digital Worship Ministry & PWA Software Team Placeholder]</li>
                       </ul>
                     </div>
+
+                    {/* Replay Opening Screen with Adventist Logo */}
+                    {onShowSplashScreen && (
+                      <div className="pt-3 border-t border-stone-200/80 dark:border-stone-700/80">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            onShowSplashScreen();
+                          }}
+                          className="w-full p-3 rounded-xl bg-amber-900/10 hover:bg-amber-900/20 dark:bg-amber-400/10 dark:hover:bg-amber-400/20 border border-amber-800/20 dark:border-amber-400/30 text-amber-950 dark:text-amber-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        >
+                          <AdventistLogo className="w-5 h-5 shrink-0" variant="gold" />
+                          <span>View Opening Screen (Adventist Logo)</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </section>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, Music, Hash, BookOpen, Bookmark, Calendar, ChevronRight, Download, Search, Settings } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { CATEGORIES_LIST } from '../data/hymns';
+import { AdventistLogo } from './AdventistLogo';
 
 interface HeaderProps {
   activeTab: 'catalog' | 'topics' | 'favorites' | 'service';
@@ -142,12 +143,15 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </button>
 
-              {/* Wordmark */}
+              {/* Wordmark with Adventist Emblem */}
               <button
                 onClick={() => handleNavClick('catalog')}
-                className="text-left font-display font-bold text-sm sm:text-base md:text-lg lg:text-xl text-stone-900 dark:text-stone-100 tracking-tight whitespace-nowrap truncate hover:text-amber-900 dark:hover:text-amber-400 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 text-left font-display font-bold text-sm sm:text-base md:text-lg lg:text-xl text-stone-900 dark:text-stone-100 tracking-tight whitespace-nowrap truncate hover:text-amber-900 dark:hover:text-amber-400 transition-colors"
               >
-                Kristu Mu Nyimbo
+                <div className="w-6 h-6 sm:w-7 sm:h-7 p-0.5 rounded-lg bg-white shadow-xs border border-amber-500/25 shrink-0 flex items-center justify-center">
+                  <AdventistLogo className="w-full h-full" />
+                </div>
+                <span className="truncate">Kristu Mu Nyimbo</span>
               </button>
             </div>
 

@@ -10,9 +10,13 @@ import { SabbathServicePlanner } from './components/SabbathServicePlanner';
 import { TopicsIndex } from './components/TopicsIndex';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { SettingsModal } from './components/SettingsModal';
+import { SplashScreen } from './components/SplashScreen';
 import { applyThemeToDOM, getStoredThemePreference } from './utils/theme';
 
 export default function App() {
+  // Opening splash screen featuring official Adventist logo
+  const [showSplash, setShowSplash] = useState<boolean>(true);
+
   // Navigation tabs: 'catalog' | 'topics' | 'favorites' | 'service'
   const [activeTab, setActiveTab] = useState<'catalog' | 'topics' | 'favorites' | 'service'>('catalog');
 
@@ -225,6 +229,7 @@ export default function App() {
           setActiveTab('favorites');
           setIsSettingsOpen(false);
         }}
+        onShowSplashScreen={() => setShowSplash(true)}
       />
 
       {/* Mobile-First Bottom Navigation Bar */}
@@ -235,6 +240,11 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         favoritesCount={favorites.length}
       />
+
+      {/* App Opening Screen with Seventh-day Adventist Logo */}
+      {showSplash && (
+        <SplashScreen onFinish={() => setShowSplash(false)} />
+      )}
     </div>
   );
 }
