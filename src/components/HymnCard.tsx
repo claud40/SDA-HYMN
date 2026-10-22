@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bookmark, Music, ChevronRight } from 'lucide-react';
 import { Hymn } from '../data/hymns';
+import { getSafeHighlightSegments } from '../utils/searchSanitizer';
 
 interface HymnCardProps {
   hymn: Hymn;
@@ -17,19 +18,20 @@ export const HymnCard: React.FC<HymnCardProps> = ({
   onSelect,
   searchQuery,
 }) => {
-  // Highlight search text helper
+  // Highlight search text helper using safe, plain-text substring matching (no RegExp)
   const highlightMatch = (text: string, query?: string) => {
+    if (!text) return text;
     if (!query || query.trim() === '') return text;
-    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+    const segments = getSafeHighlightSegments(text, query);
     return (
       <>
-        {parts.map((part, i) =>
-          part.toLowerCase() === query.toLowerCase() ? (
+        {segments.map((seg, i) =>
+          seg.isMatch ? (
             <mark key={i} className="bg-amber-200 dark:bg-amber-900/60 text-stone-900 dark:text-stone-100 rounded px-0.5">
-              {part}
+              {seg.text}
             </mark>
           ) : (
-            part
+            seg.text
           )
         )}
       </>

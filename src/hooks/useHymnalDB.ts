@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Hymn, SAMPLE_HYMNS, WorshipProgramItem, DEFAULT_SABBATH_PROGRAM } from '../data/hymns';
 import { hymnalDB, RecentHymnRecord } from '../services/db';
+import { validateAndDeduplicateHymns } from '../utils/hymnValidator';
 
 export function useHymnalDB() {
-  const [hymns, setHymns] = useState<Hymn[]>(SAMPLE_HYMNS);
+  const [hymns, setHymns] = useState<Hymn[]>(() => {
+    return validateAndDeduplicateHymns(SAMPLE_HYMNS).validHymns;
+  });
   const [favorites, setFavorites] = useState<string[]>(['hymn-1', 'hymn-7', 'hymn-72']);
   const [recentHymns, setRecentHymns] = useState<RecentHymnRecord[]>([]);
   const [servicePlan, setServicePlan] = useState<WorshipProgramItem[]>(DEFAULT_SABBATH_PROGRAM);
@@ -23,7 +26,7 @@ export function useHymnalDB() {
         ]);
 
         if (isMounted) {
-          if (loadedHymns.length > 0) setHymns(loadedHymns);
+          if (loadedHymns && loadedHymns.length > 0) setHymns(loadedHymns);
           setFavorites(loadedFavorites);
           setRecentHymns(loadedRecent);
           setServicePlan(loadedPlan);
@@ -63,6 +66,24 @@ export function useHymnalDB() {
     setRecentHymns(updated);
   }, []);
 
+  const saveHymn = useCallback(async (candidate: unknown) => {
+    const result = await hymnalDB.saveHymn(candidate);
+    if (result.success && result.hymn) {
+      const refreshed = await hymnalDB.getAllHymns();
+      setHymns(refreshed);
+    }
+    return result;
+  }, []);
+
+  const importHymns = useCallback(async (candidates: unknown[]) => {
+    const result = await hymnalDB.importHymns(candidates);
+    if (result.importedCount > 0) {
+      const refreshed = await hymnalDB.getAllHymns();
+      setHymns(refreshed);
+    }
+    return result;
+  }, []);
+
   return {
     hymns,
     favorites,
@@ -71,5 +92,7 @@ export function useHymnalDB() {
     isDBReady,
     toggleFavorite,
     recordRecentHymn,
+    saveHymn,
+    importHymns,
   };
 }

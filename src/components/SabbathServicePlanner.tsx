@@ -4,10 +4,12 @@ import { WorshipProgramItem, DEFAULT_SABBATH_PROGRAM, SAMPLE_HYMNS, Hymn } from 
 
 interface SabbathServicePlannerProps {
   onSelectHymn: (hymn: Hymn) => void;
+  allHymns?: Hymn[];
 }
 
 export const SabbathServicePlanner: React.FC<SabbathServicePlannerProps> = ({
   onSelectHymn,
+  allHymns = SAMPLE_HYMNS,
 }) => {
   return (
     <div className="space-y-6">
@@ -28,7 +30,7 @@ export const SabbathServicePlanner: React.FC<SabbathServicePlannerProps> = ({
       {/* Program Hymn Items */}
       <div className="space-y-3">
         {DEFAULT_SABBATH_PROGRAM.map((item: WorshipProgramItem) => {
-          const hymn = SAMPLE_HYMNS.find((h) => h.number === item.hymnNumber);
+          const hymn = allHymns.find((h) => h.number === item.hymnNumber);
           if (!hymn) return null;
 
           return (

@@ -5,11 +5,13 @@ import { CATEGORIES_LIST, SAMPLE_HYMNS, Hymn } from '../data/hymns';
 interface TopicsIndexProps {
   onSelectTopic: (topicId: string) => void;
   onSelectHymn: (hymn: Hymn) => void;
+  allHymns?: Hymn[];
 }
 
 export const TopicsIndex: React.FC<TopicsIndexProps> = ({
   onSelectTopic,
   onSelectHymn,
+  allHymns = SAMPLE_HYMNS,
 }) => {
   return (
     <div className="space-y-6">
@@ -25,7 +27,7 @@ export const TopicsIndex: React.FC<TopicsIndexProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {CATEGORIES_LIST.map((topic) => {
-          const matchingHymns = SAMPLE_HYMNS.filter((h) => h.category === topic.id);
+          const matchingHymns = allHymns.filter((h) => h.category === topic.id);
 
           return (
             <div

@@ -1,4 +1,9 @@
 import { Hymn, SAMPLE_HYMNS, WorshipProgramItem, DEFAULT_SABBATH_PROGRAM } from '../data/hymns';
+import {
+  validateHymnRecord,
+  validateAndDeduplicateHymns,
+  mergeWithDefaultHymns,
+} from '../utils/hymnValidator';
 
 const DB_NAME = 'KristuMuNyimboDB';
 const DB_VERSION = 1;
@@ -59,7 +64,7 @@ class HymnalIndexedDB {
 
       request.onsuccess = async () => {
         const db = request.result;
-        // Auto-seed sample hymns if empty
+        // Auto-seed sample hymns with validation & deduplication
         try {
           await this.seedInitialData(db);
         } catch {
@@ -82,8 +87,9 @@ class HymnalIndexedDB {
       const hymnStore = tx.objectStore('hymns');
       const planStore = tx.objectStore('servicePlan');
 
-      // Always ensure SAMPLE_HYMNS are up-to-date with writer and metadata
-      SAMPLE_HYMNS.forEach((hymn) => {
+      // Always validate and deduplicate baseline hymns before putting
+      const { validHymns } = validateAndDeduplicateHymns(SAMPLE_HYMNS);
+      validHymns.forEach((hymn) => {
         hymnStore.put(hymn);
       });
 
@@ -105,43 +111,115 @@ class HymnalIndexedDB {
   async getAllHymns(): Promise<Hymn[]> {
     try {
       const db = await this.openDB();
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const tx = db.transaction('hymns', 'readonly');
         const store = tx.objectStore('hymns');
         const req = store.getAll();
+
         req.onsuccess = () => {
-          if (req.result && req.result.length > 0) {
-            const hymnsWithWriter = (req.result as Hymn[]).map((h) => {
-              if (!h.writer) {
-                const sample = SAMPLE_HYMNS.find((s) => s.id === h.id || s.number === h.number);
-                return { ...h, writer: sample?.writer || 'Traditional' };
-              }
-              return h;
-            });
-            resolve(hymnsWithWriter);
-          } else {
-            resolve(SAMPLE_HYMNS);
-          }
+          const rawItems = (req.result as unknown[]) || [];
+          // 1. Strictly validate every record and deduplicate by hymn number
+          const { validHymns } = validateAndDeduplicateHymns(rawItems);
+
+          // 2. Safely merge with baseline default hymns to guarantee no deletions or missing songs
+          const completeHymns = mergeWithDefaultHymns(validHymns, SAMPLE_HYMNS);
+          resolve(completeHymns);
         };
-        req.onerror = () => resolve(SAMPLE_HYMNS);
+
+        req.onerror = () => {
+          const { validHymns } = validateAndDeduplicateHymns(SAMPLE_HYMNS);
+          resolve(validHymns);
+        };
       });
     } catch {
-      return SAMPLE_HYMNS;
+      const { validHymns } = validateAndDeduplicateHymns(SAMPLE_HYMNS);
+      return validHymns;
     }
   }
 
   async getHymnByNumber(number: number): Promise<Hymn | null> {
+    if (!number || typeof number !== 'number' || number <= 0) return null;
+    try {
+      const all = await this.getAllHymns();
+      return all.find((h) => h.number === number) || null;
+    } catch {
+      return SAMPLE_HYMNS.find((h) => h.number === number) || null;
+    }
+  }
+
+  /**
+   * Safely saves or updates a single hymn record.
+   * - Validates required fields (number, title, verses, choruses)
+   * - Preserves original Bemba spelling and verse order
+   * - Rejects corrupt or invalid objects
+   */
+  async saveHymn(candidate: unknown): Promise<{ success: boolean; hymn?: Hymn; error?: string }> {
+    const validation = validateHymnRecord(candidate);
+    if (!validation.isValid || !validation.hymn) {
+      return { success: false, error: validation.error || 'Invalid hymn record structure.' };
+    }
+
+    const hymn = validation.hymn;
     try {
       const db = await this.openDB();
       return new Promise((resolve) => {
-        const tx = db.transaction('hymns', 'readonly');
-        const index = tx.objectStore('hymns').index('number');
-        const req = index.get(number);
-        req.onsuccess = () => resolve((req.result as Hymn) || null);
-        req.onerror = () => resolve(null);
+        const tx = db.transaction('hymns', 'readwrite');
+        const store = tx.objectStore('hymns');
+        store.put(hymn);
+        tx.oncomplete = () => resolve({ success: true, hymn });
+        tx.onerror = () => resolve({ success: false, error: 'Database transaction failed.' });
+      });
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
+    }
+  }
+
+  /**
+   * Safely imports and deduplicates a batch of hymns.
+   * - Prevents duplicate hymn numbers
+   * - Validates all required fields
+   * - Protects existing hymn integrity
+   */
+  async importHymns(candidates: unknown[]): Promise<{
+    importedCount: number;
+    rejectedCount: number;
+    duplicateCount: number;
+    totalHymns: number;
+  }> {
+    const { validHymns, rejectedCount, duplicateCount } = validateAndDeduplicateHymns(candidates);
+    if (validHymns.length === 0) {
+      const current = await this.getAllHymns();
+      return { importedCount: 0, rejectedCount, duplicateCount, totalHymns: current.length };
+    }
+
+    try {
+      const db = await this.openDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction('hymns', 'readwrite');
+        const store = tx.objectStore('hymns');
+        validHymns.forEach((hymn) => store.put(hymn));
+        tx.oncomplete = async () => {
+          const all = await this.getAllHymns();
+          resolve({
+            importedCount: validHymns.length,
+            rejectedCount,
+            duplicateCount,
+            totalHymns: all.length,
+          });
+        };
+        tx.onerror = async () => {
+          const all = await this.getAllHymns();
+          resolve({
+            importedCount: 0,
+            rejectedCount: candidates.length,
+            duplicateCount,
+            totalHymns: all.length,
+          });
+        };
       });
     } catch {
-      return SAMPLE_HYMNS.find((h) => h.number === number) || null;
+      const all = await this.getAllHymns();
+      return { importedCount: 0, rejectedCount: candidates.length, duplicateCount, totalHymns: all.length };
     }
   }
 

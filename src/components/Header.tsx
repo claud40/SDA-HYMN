@@ -3,6 +3,7 @@ import { Menu, X, Music, Hash, BookOpen, Bookmark, Calendar, ChevronRight, Downl
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { CATEGORIES_LIST } from '../data/hymns';
 import { AdventistLogo } from './AdventistLogo';
+import { MAX_SEARCH_LENGTH } from '../utils/searchSanitizer';
 
 interface HeaderProps {
   activeTab: 'catalog' | 'topics' | 'favorites' | 'service';
@@ -87,7 +88,11 @@ export const Header: React.FC<HeaderProps> = ({
                 ref={mobileInputRef}
                 type="text"
                 value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
+                maxLength={MAX_SEARCH_LENGTH}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                onChange={(e) => onSearchChange(e.target.value.slice(0, MAX_SEARCH_LENGTH))}
                 placeholder="Fwayeni inyimbo..."
                 className="w-full h-10 pl-9 pr-8 rounded-xl bg-stone-100 dark:bg-stone-800/90 border border-stone-200 dark:border-stone-700 text-xs text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-800/30"
               />
@@ -162,7 +167,11 @@ export const Header: React.FC<HeaderProps> = ({
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => onSearchChange(e.target.value)}
+                  maxLength={MAX_SEARCH_LENGTH}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  onChange={(e) => onSearchChange(e.target.value.slice(0, MAX_SEARCH_LENGTH))}
                   placeholder="Fwayeni inyimbo (Search hymns)..."
                   className="w-full h-10 pl-9 pr-8 rounded-xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 text-xs sm:text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-800/30 transition-all"
                 />

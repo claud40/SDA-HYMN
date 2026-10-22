@@ -6,18 +6,20 @@ interface NumericDialpadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectHymn: (hymn: Hymn) => void;
+  allHymns?: Hymn[];
 }
 
 export const NumericDialpadModal: React.FC<NumericDialpadModalProps> = ({
   isOpen,
   onClose,
   onSelectHymn,
+  allHymns = SAMPLE_HYMNS,
 }) => {
   const [digits, setDigits] = useState<string>('');
 
   const currentNumber = parseInt(digits, 10);
   const matchedHymn = !isNaN(currentNumber)
-    ? SAMPLE_HYMNS.find((h) => h.number === currentNumber)
+    ? allHymns.find((h) => h.number === currentNumber)
     : null;
 
   const handleDigit = (digit: string) => {

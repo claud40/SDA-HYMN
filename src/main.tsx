@@ -3,23 +3,18 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Unregister any active service worker in development/preview iframe
+// Register Service Worker for offline hymnal access and reopening
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      registration.unregister().catch(() => {});
-    }
-  }).catch(() => {});
-
-  if ('caches' in window) {
-    caches.keys().then((names) => {
-      for (const name of names) {
-        if (name.includes('kristu-mu-nyimbo')) {
-          caches.delete(name).catch(() => {});
-        }
-      }
-    }).catch(() => {});
-  }
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        reg.update().catch(() => {});
+      })
+      .catch((err) => {
+        console.warn('[PWA] Service Worker registration failed:', err);
+      });
+  });
 }
 
 interface ErrorBoundaryProps {

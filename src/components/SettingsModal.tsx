@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { Hymn, SAMPLE_HYMNS } from '../data/hymns';
 import { AdventistLogo } from './AdventistLogo';
+import { sanitizePlainText, sanitizeHymnNumber } from '../utils/searchSanitizer';
 import {
   applyThemeToDOM,
   getStoredThemePreference,
@@ -148,9 +149,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [feedbackHymnNum, setFeedbackHymnNum] = useState<string>('');
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
   const [feedbackSender, setFeedbackSender] = useState<string>('');
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+  const [lastSubmittedText, setLastSubmittedText] = useState<string>('');
   const [feedbackHistory, setFeedbackHistory] = useState<Array<{ id: string; category: string; hymnNum?: string; message: string; date: string }>>(() => {
     try {
-      return JSON.parse(localStorage.getItem('hymnal_feedback_history') || '[]');
+      const raw = localStorage.getItem('hymnal_feedback_history');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((item) => item && typeof item.message === 'string' && typeof item.category === 'string')
+        .slice(0, 15);
     } catch {
       return [];
     }
@@ -317,54 +326,103 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Rating Actions
   const handleSaveRating = () => {
-    localStorage.setItem('hymnal_user_rating', userRating.toString());
-    localStorage.setItem('hymnal_rating_submitted', 'true');
-    localStorage.setItem('hymnal_rating_comment', ratingComment);
+    const cleanComment = sanitizePlainText(ratingComment, 300);
+    const safeRating = Math.min(5, Math.max(1, userRating || 5));
+    try {
+      localStorage.setItem('hymnal_user_rating', safeRating.toString());
+      localStorage.setItem('hymnal_rating_submitted', 'true');
+      localStorage.setItem('hymnal_rating_comment', cleanComment);
+    } catch {
+      // Local storage fallback
+    }
     setRatingSubmitted(true);
-    showFeedback(`Twalumba! Thank you for rating Kristu Mu Nyimbo ${userRating} stars!`);
+    showFeedback(`Twalumba! Thank you for rating Kristu Mu Nyimbo ${safeRating} stars!`);
   };
 
-  // Feedback Submission
+  // Feedback Submission with security validation, anti-spam, and length clamping
   const handleSubmitFeedback = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!feedbackMessage.trim()) {
-      showFeedback('Please enter your feedback message or typo details.');
+
+    // Prevent rapid repeated submissions
+    if (isSubmittingFeedback) {
+      showFeedback('Please wait a moment before submitting another feedback note.');
       return;
     }
+
+    // 1. Sanitize all inputs to safe plain text
+    const cleanMessage = sanitizePlainText(feedbackMessage, 1000);
+    const cleanHymnNum = sanitizeHymnNumber(feedbackHymnNum);
+    const cleanSender = sanitizePlainText(feedbackSender, 80);
+
+    // 2. Validate message presence and minimal length
+    if (!cleanMessage || cleanMessage.length < 3) {
+      showFeedback('Please enter your feedback or correction details (at least 3 characters).');
+      return;
+    }
+
+    // 3. Prevent duplicate submissions
+    if (cleanMessage.toLowerCase() === lastSubmittedText.toLowerCase()) {
+      showFeedback('This feedback note was already recorded. Twalumba saana!');
+      return;
+    }
+
+    // 4. Validate category safely
+    const validCategories = ['lyrics', 'tune', 'feature', 'general'];
+    const safeCategory = (validCategories.includes(feedbackCategory) ? feedbackCategory : 'general') as 'lyrics' | 'tune' | 'feature' | 'general';
+
+    // 5. Build safe plain text record
     const newEntry = {
-      id: Date.now().toString(),
-      category: feedbackCategory,
-      hymnNum: feedbackHymnNum.trim() || undefined,
-      message: feedbackMessage.trim(),
-      sender: feedbackSender.trim() || undefined,
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      category: safeCategory,
+      hymnNum: cleanHymnNum || undefined,
+      message: cleanMessage,
+      sender: cleanSender || undefined,
       date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     };
+
     const updated = [newEntry, ...feedbackHistory].slice(0, 15);
     setFeedbackHistory(updated);
-    localStorage.setItem('hymnal_feedback_history', JSON.stringify(updated));
+    try {
+      localStorage.setItem('hymnal_feedback_history', JSON.stringify(updated));
+    } catch {
+      // Local storage quota or security error fallback
+    }
+
+    // Anti-spam cooldown and state reset
+    setIsSubmittingFeedback(true);
+    setLastSubmittedText(cleanMessage);
     setFeedbackMessage('');
     setFeedbackHymnNum('');
     showFeedback('Feedback recorded! Twalumba saana for helping improve Kristu Mu Nyimbo.');
+
+    setTimeout(() => {
+      setIsSubmittingFeedback(false);
+    }, 2500);
   };
 
-  // Send via Mailto
+  // Send via Mailto (clamped to URL length limits, safe plain text)
   const handleSendEmailFeedback = () => {
+    const cleanMessage = sanitizePlainText(feedbackMessage, 800);
+    const cleanHymnNum = sanitizeHymnNumber(feedbackHymnNum);
+    const cleanSender = sanitizePlainText(feedbackSender, 80);
+
     const categoryLabels = {
       lyrics: 'Hymn Lyric or Stanza Correction',
       tune: 'Song Audio Melody or Tune',
       feature: 'App Feature Suggestion',
       general: 'General Praise or Feedback',
     };
+    const catLabel = categoryLabels[feedbackCategory] || 'Hymnal Feedback';
     const subject = encodeURIComponent(
-      `[Kristu Mu Nyimbo Feedback] ${categoryLabels[feedbackCategory]}${feedbackHymnNum ? ` - Hymn #${feedbackHymnNum}` : ''}`
+      `[Kristu Mu Nyimbo Feedback] ${catLabel}${cleanHymnNum ? ` - Hymn #${cleanHymnNum}` : ''}`
     );
     const body = encodeURIComponent(
       `Shaleni Bwino / Greetings,\n\n` +
-      `Feedback Category: ${categoryLabels[feedbackCategory]}\n` +
-      (feedbackHymnNum ? `Hymn Number: #${feedbackHymnNum}\n` : '') +
-      (feedbackSender ? `Sender / Church: ${feedbackSender}\n` : '') +
+      `Feedback Category: ${catLabel}\n` +
+      (cleanHymnNum ? `Hymn Number: #${cleanHymnNum}\n` : '') +
+      (cleanSender ? `Sender / Church: ${cleanSender}\n` : '') +
       `Date: ${new Date().toLocaleString()}\n\n` +
-      `Feedback / Correction Details:\n${feedbackMessage || '(Please specify your remarks or correction notes here)'}\n\n` +
+      `Feedback / Correction Details:\n${cleanMessage || '(Please specify your remarks or correction notes here)'}\n\n` +
       `----------------------------------------\n` +
       `App: Kristu Mu Nyimbo — Bemba SDA Hymnal (v2.5.0 PWA)\n` +
       `Seventh-day Adventist Church • Zambia Union Conference Publications`
@@ -372,20 +430,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     window.location.href = `mailto:worship@kristumunyimbo.adventist.org.zm?subject=${subject}&body=${body}`;
   };
 
-  // Send Feedback directly via WhatsApp (+260771500266)
+  // Send Feedback directly via WhatsApp (+260771500266) with safe plain text & clamped message
   const handleSendWhatsAppFeedback = () => {
+    const cleanMessage = sanitizePlainText(feedbackMessage, 600);
+    const cleanHymnNum = sanitizeHymnNumber(feedbackHymnNum);
+    const cleanSender = sanitizePlainText(feedbackSender, 60);
+
     const categoryLabels = {
       lyrics: 'Hymn Lyric Correction',
       tune: 'Hymn Melody/Tune',
       feature: 'App Feature Suggestion',
       general: 'Praise / Feedback',
     };
+    const catLabel = categoryLabels[feedbackCategory] || 'Feedback';
     const message = encodeURIComponent(
       `*Kristu Mu Nyimbo Feedback*\n` +
-      `Category: ${categoryLabels[feedbackCategory]}\n` +
-      (feedbackHymnNum ? `Hymn #: ${feedbackHymnNum}\n` : '') +
-      (feedbackSender ? `From: ${feedbackSender}\n` : '') +
-      `Message: ${feedbackMessage || 'Greetings from church!'}`
+      `Category: ${catLabel}\n` +
+      (cleanHymnNum ? `Hymn #: ${cleanHymnNum}\n` : '') +
+      (cleanSender ? `From: ${cleanSender}\n` : '') +
+      `Message: ${cleanMessage || 'Greetings from church!'}`
     );
     window.open(`https://wa.me/260771500266?text=${message}`, '_blank');
   };
@@ -1244,9 +1307,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <input
                         type="text"
                         value={feedbackHymnNum}
-                        onChange={(e) => setFeedbackHymnNum(e.target.value)}
+                        maxLength={10}
+                        onChange={(e) => setFeedbackHymnNum(sanitizeHymnNumber(e.target.value))}
                         placeholder="e.g. 7 or 18 (Optional)"
-                        className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/30"
+                        className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/30 font-mono"
                       />
                     </div>
                     <div>
@@ -1256,7 +1320,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <input
                         type="text"
                         value={feedbackSender}
-                        onChange={(e) => setFeedbackSender(e.target.value)}
+                        maxLength={80}
+                        onChange={(e) => setFeedbackSender(e.target.value.slice(0, 80))}
                         placeholder="e.g. Elder Banda / Lusaka SDA"
                         className="w-full text-xs px-3 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/30"
                       />
@@ -1265,13 +1330,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                   {/* Message / Details Area */}
                   <div>
-                    <label className="block text-[11px] font-medium text-stone-600 dark:text-stone-400 mb-1">
-                      Details / Correction Notes:
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-medium text-stone-600 dark:text-stone-400">
+                        Details / Correction Notes:
+                      </label>
+                      <span className="text-[10px] text-stone-400 font-mono">
+                        {feedbackMessage.length}/1000
+                      </span>
+                    </div>
                     <textarea
                       rows={3}
+                      maxLength={1000}
                       value={feedbackMessage}
-                      onChange={(e) => setFeedbackMessage(e.target.value)}
+                      onChange={(e) => setFeedbackMessage(e.target.value.slice(0, 1000))}
                       placeholder="Please specify stanza number, incorrect Bemba word, suggested correction, or feature proposal..."
                       className="w-full text-xs px-3.5 py-2.5 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500/30 resize-none"
                     />
@@ -1281,11 +1352,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                     <button
                       type="button"
+                      disabled={isSubmittingFeedback}
                       onClick={handleSubmitFeedback}
-                      className="px-4 py-2 rounded-xl bg-amber-900 hover:bg-amber-950 dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-stone-950 text-xs font-bold transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 ${
+                        isSubmittingFeedback
+                          ? 'bg-emerald-700 text-white opacity-90 cursor-not-allowed'
+                          : 'bg-amber-900 hover:bg-amber-950 dark:bg-amber-500 dark:hover:bg-amber-600 text-white dark:text-stone-950 cursor-pointer active:scale-95'
+                      }`}
                     >
                       <Check className="w-3.5 h-3.5" />
-                      <span>Submit Feedback (Save Locally)</span>
+                      <span>{isSubmittingFeedback ? 'Submitted ✓' : 'Submit Feedback (Save Locally)'}</span>
                     </button>
 
                     <div className="flex flex-wrap items-center gap-2">

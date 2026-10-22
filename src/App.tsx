@@ -11,8 +11,10 @@ import { TopicsIndex } from './components/TopicsIndex';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { SettingsModal } from './components/SettingsModal';
 import { SplashScreen } from './components/SplashScreen';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { applyThemeToDOM, getStoredThemePreference } from './utils/theme';
 import { applyTypographyToDOM, getStoredTypography } from './utils/typography';
+import { sanitizeSearchQuery, matchHymnByQuery, MAX_SEARCH_LENGTH } from './utils/searchSanitizer';
 
 export default function App() {
   // Opening splash screen featuring official Adventist logo
@@ -69,8 +71,19 @@ export default function App() {
     recordRecentHymn(hymn);
   };
 
-  // Filter and sort hymns
+  const handleSearchChange = (query: string) => {
+    // Safely clamp input length and treat as plain text
+    if (typeof query !== 'string') {
+      setSearchQuery('');
+      return;
+    }
+    setSearchQuery(query.slice(0, MAX_SEARCH_LENGTH));
+  };
+
+  // Filter and sort hymns safely with plain-text matching (read-only, prevents HTML/SQL/code execution)
   const filteredHymns = useMemo(() => {
+    const cleanQuery = sanitizeSearchQuery(searchQuery);
+
     return hymns.filter((hymn) => {
       // Tab filter for Favorites
       if (activeTab === 'favorites' && !favorites.includes(hymn.id)) {
@@ -82,20 +95,9 @@ export default function App() {
         return false;
       }
 
-      // Query filter
-      if (searchQuery.trim() !== '') {
-        const query = searchQuery.trim().toLowerCase();
-        const matchesNumber = hymn.number.toString().includes(query);
-        const matchesTitle = hymn.title.toLowerCase().includes(query);
-        const matchesWriter = hymn.writer ? hymn.writer.toLowerCase().includes(query) : false;
-        const matchesTune = hymn.englishTune.toLowerCase().includes(query);
-        const matchesScripture = hymn.scripture.toLowerCase().includes(query);
-        const matchesCategory = hymn.categoryBemba.toLowerCase().includes(query);
-        const matchesLyrics = hymn.verses.some((verse) =>
-          verse.some((line) => line.toLowerCase().includes(query))
-        ) || (hymn.chorus ? hymn.chorus.some((line) => line.toLowerCase().includes(query)) : false);
-
-        return matchesNumber || matchesTitle || matchesWriter || matchesTune || matchesScripture || matchesCategory || matchesLyrics;
+      // Pure plain-text query matching (strictly read-only, never mutates hymn data)
+      if (cleanQuery !== '') {
+        return matchHymnByQuery(hymn, cleanQuery);
       }
 
       return true;
@@ -142,7 +144,7 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         favoritesCount={favorites.length}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         onSelectCategory={(categoryId) => {
           setSelectedCategory(categoryId);
           setActiveTab('catalog');
@@ -154,11 +156,12 @@ export default function App() {
 
         {/* View Switcher: Catalog vs Topics vs Favorites vs Service */}
         {activeTab === 'service' ? (
-          <SabbathServicePlanner onSelectHymn={handleOpenHymn} />
+          <SabbathServicePlanner onSelectHymn={handleOpenHymn} allHymns={hymns} />
         ) : activeTab === 'topics' ? (
           <TopicsIndex
             onSelectTopic={handleSelectTopicFromIndex}
             onSelectHymn={handleOpenHymn}
+            allHymns={hymns}
           />
         ) : (
           <section>
@@ -187,7 +190,7 @@ export default function App() {
                 <p className="text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-md mx-auto">
                   {activeTab === 'favorites'
                     ? 'Tamusangile inyimbo pa malumbo yenu. Tinyeni akacishi ka bookmark pa nyimbo imo ine.'
-                    : `Tapali inyimbo ikwete amashiwi aya: "${searchQuery}". Esheni ukulemba nambala iili ngo 1, 7, 18, 33, 72.`}
+                    : `Tapali inyimbo ikwete amashiwi aya: "${sanitizeSearchQuery(searchQuery).slice(0, 40)}". Esheni ukulemba nambala iili ngo 1, 7, 18, 33, 72.`}
                 </p>
                 <button
                   onClick={() => {
@@ -225,6 +228,7 @@ export default function App() {
       <NumericDialpadModal
         isOpen={isDialpadOpen}
         onClose={() => setIsDialpadOpen(false)}
+        allHymns={hymns}
         onSelectHymn={(hymn) => {
           handleOpenHymn(hymn);
           setIsDialpadOpen(false);
@@ -262,6 +266,9 @@ export default function App() {
       {showSplash && (
         <SplashScreen onFinish={() => setShowSplash(false)} />
       )}
+
+      {/* Offline Status Indicator */}
+      <OfflineIndicator />
     </div>
   );
 }
