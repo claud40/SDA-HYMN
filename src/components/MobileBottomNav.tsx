@@ -66,13 +66,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               : 'text-stone-500 dark:text-stone-400 hover:text-stone-900'
           }`}
         >
-          <Bookmark className="w-5 h-5" />
-          <span className="text-[10px] mt-1 tracking-tight truncate">Amalumbo</span>
-          {favoritesCount > 0 && (
-            <span className="absolute top-2 right-4 w-4 h-4 rounded-full bg-amber-800 text-white text-[9px] font-bold flex items-center justify-center">
-              {favoritesCount}
-            </span>
-          )}
+          <div className="relative">
+            <Bookmark className="w-5 h-5" />
+            {favoritesCount > 0 && (
+              <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-amber-800 text-white text-[9px] font-bold flex items-center justify-center">
+                {favoritesCount}
+              </span>
+            )}
+          </div>
+          <span className="text-[9px] sm:text-[10px] mt-1 tracking-tight truncate max-w-full px-0.5">Amalumbo</span>
         </button>
 
         {/* Service Program Tab */}

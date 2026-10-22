@@ -122,12 +122,12 @@ export const Header: React.FC<HeaderProps> = ({
         ) : (
           <>
             {/* Zone 1: Wordmark & 3-Lines Navigation Trigger Button */}
-            <div className="flex items-center gap-1.5 sm:gap-3 shrink min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1 sm:flex-initial">
               {/* 3-Lines (Hamburger) Navigation Toggle */}
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="w-10 h-10 min-w-[40px] rounded-xl flex items-center justify-center text-stone-700 hover:text-amber-900 dark:text-stone-300 dark:hover:text-amber-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 min-w-[36px] sm:min-w-[40px] rounded-xl flex items-center justify-center text-stone-700 hover:text-amber-900 dark:text-stone-300 dark:hover:text-amber-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors shrink-0"
                 aria-label="3 lines navigation menu"
                 aria-expanded={isMenuOpen}
                 title="3 Lines Navigation Menu"
@@ -135,10 +135,10 @@ export const Header: React.FC<HeaderProps> = ({
                 {isMenuOpen ? (
                   <X className="w-5 h-5" />
                 ) : (
-                  <div className="flex flex-col justify-center items-center gap-1 w-5 h-5">
-                    <span className="w-5 h-0.5 bg-current rounded-full transition-all"></span>
-                    <span className="w-5 h-0.5 bg-current rounded-full transition-all"></span>
-                    <span className="w-5 h-0.5 bg-current rounded-full transition-all"></span>
+                  <div className="flex flex-col justify-center items-center gap-1 w-4.5 h-4.5">
+                    <span className="w-4.5 h-0.5 bg-current rounded-full transition-all"></span>
+                    <span className="w-4.5 h-0.5 bg-current rounded-full transition-all"></span>
+                    <span className="w-4.5 h-0.5 bg-current rounded-full transition-all"></span>
                   </div>
                 )}
               </button>
@@ -146,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Wordmark with Adventist Emblem */}
               <button
                 onClick={() => handleNavClick('catalog')}
-                className="flex items-center gap-1.5 sm:gap-2 text-left font-display font-bold text-sm sm:text-base md:text-lg lg:text-xl text-stone-900 dark:text-stone-100 tracking-tight whitespace-nowrap truncate hover:text-amber-900 dark:hover:text-amber-400 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2 text-left font-display font-bold text-xs xs:text-sm sm:text-base md:text-lg lg:text-xl text-stone-900 dark:text-stone-100 tracking-tight whitespace-nowrap truncate hover:text-amber-900 dark:hover:text-amber-400 transition-colors min-w-0"
               >
                 <div className="w-6 h-6 sm:w-7 sm:h-7 p-0.5 rounded-lg bg-white shadow-xs border border-amber-500/25 shrink-0 flex items-center justify-center">
                   <AdventistLogo className="w-full h-full" />
@@ -244,16 +244,16 @@ export const Header: React.FC<HeaderProps> = ({
             </nav>
 
             {/* Zone 3: Search Button, Settings & 6-Dots Quick Jump Action (on same line) */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               {/* Settings Button */}
               <button
                 type="button"
                 onClick={onOpenSettings}
-                className="w-10 h-10 min-w-[40px] rounded-xl flex items-center justify-center text-stone-700 hover:text-amber-900 dark:text-stone-300 dark:hover:text-amber-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 min-w-[36px] sm:min-w-[40px] rounded-xl flex items-center justify-center text-stone-700 hover:text-amber-900 dark:text-stone-300 dark:hover:text-amber-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors shrink-0"
                 aria-label="Settings"
                 title="Settings"
               >
-                <Settings className="w-5 h-5" />
+                <Settings className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
               </button>
 
               {/* Search Button on top in the same line on mobile */}
@@ -263,22 +263,22 @@ export const Header: React.FC<HeaderProps> = ({
                   setIsMobileSearchOpen(true);
                   setTimeout(() => mobileInputRef.current?.focus(), 50);
                 }}
-                className="sm:hidden w-10 h-10 min-w-[40px] rounded-xl flex items-center justify-center text-stone-700 hover:text-amber-900 dark:text-stone-300 dark:hover:text-amber-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors"
+                className="sm:hidden w-9 h-9 min-w-[36px] rounded-xl flex items-center justify-center text-stone-700 hover:text-amber-900 dark:text-stone-300 dark:hover:text-amber-400 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors shrink-0"
                 aria-label="Fwayeni inyimbo (Search)"
                 title="Search hymns"
               >
-                <Search className="w-5 h-5" />
+                <Search className="w-4.5 h-4.5" />
               </button>
 
               {/* 6-Dots Dialpad Button (6 dots, no words or letters) */}
               <button
                 type="button"
                 onClick={onOpenDialpad}
-                className="w-10 h-10 min-w-[40px] rounded-xl flex items-center justify-center bg-amber-900 hover:bg-amber-950 dark:bg-amber-800 dark:hover:bg-amber-700 text-white transition-all shadow-sm active:scale-95"
+                className="w-9 h-9 sm:w-10 sm:h-10 min-w-[36px] sm:min-w-[40px] rounded-xl flex items-center justify-center bg-amber-900 hover:bg-amber-950 dark:bg-amber-800 dark:hover:bg-amber-700 text-white transition-all shadow-xs active:scale-95 shrink-0"
                 aria-label="6 dots"
                 title="Nambala (Keypad)"
               >
-                <span className="grid grid-cols-3 gap-1 p-1">
+                <span className="grid grid-cols-3 gap-0.5 sm:gap-1 p-0.5 sm:p-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                   <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                   <span className="w-1.5 h-1.5 rounded-full bg-current"></span>

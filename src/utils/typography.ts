@@ -80,12 +80,27 @@ export const applyTypographyToDOM = (settings: TypographySettings) => {
   const spacingCfg = TYPOGRAPHY_CONFIG.lineSpacing[settings.lineSpacing] || TYPOGRAPHY_CONFIG.lineSpacing.relaxed;
   const fontVal = TYPOGRAPHY_CONFIG.fontFamily[settings.fontFamily] || TYPOGRAPHY_CONFIG.fontFamily.serif;
 
-  // Set CSS variables on root
+  // Set CSS variables on root and body for immediate global reactivity
+  const lineGap = `${(spacingCfg.multiplier - 1) * 0.45}rem`;
+  const cardTitlePx = `${Math.max(16, Math.round(sizeCfg.titlePx * 0.62))}px`;
+
   root.style.setProperty('--hymn-verse-size', `${sizeCfg.versePx}px`);
   root.style.setProperty('--hymn-title-size', `${sizeCfg.titlePx}px`);
   root.style.setProperty('--hymn-num-size', `${sizeCfg.numPx}px`);
   root.style.setProperty('--hymn-line-height', `${spacingCfg.multiplier}`);
+  root.style.setProperty('--hymn-line-gap', lineGap);
+  root.style.setProperty('--card-title-size', cardTitlePx);
   root.style.setProperty('--hymn-font-family', fontVal);
+
+  if (document.body) {
+    document.body.style.setProperty('--hymn-verse-size', `${sizeCfg.versePx}px`);
+    document.body.style.setProperty('--hymn-title-size', `${sizeCfg.titlePx}px`);
+    document.body.style.setProperty('--hymn-num-size', `${sizeCfg.numPx}px`);
+    document.body.style.setProperty('--hymn-line-height', `${spacingCfg.multiplier}`);
+    document.body.style.setProperty('--hymn-line-gap', lineGap);
+    document.body.style.setProperty('--card-title-size', cardTitlePx);
+    document.body.style.setProperty('--hymn-font-family', fontVal);
+  }
 
   root.dataset.hymnTextSize = settings.textSize;
   root.dataset.hymnLineSpacing = settings.lineSpacing;

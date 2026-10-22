@@ -35,7 +35,8 @@ import {
   MessageCircle,
   Gift,
   ThumbsUp,
-  AlertCircle
+  AlertCircle,
+  Phone
 } from 'lucide-react';
 import { Hymn, SAMPLE_HYMNS } from '../data/hymns';
 import { AdventistLogo } from './AdventistLogo';
@@ -371,6 +372,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     window.location.href = `mailto:worship@kristumunyimbo.adventist.org.zm?subject=${subject}&body=${body}`;
   };
 
+  // Send Feedback directly via WhatsApp (+260771500266)
+  const handleSendWhatsAppFeedback = () => {
+    const categoryLabels = {
+      lyrics: 'Hymn Lyric Correction',
+      tune: 'Hymn Melody/Tune',
+      feature: 'App Feature Suggestion',
+      general: 'Praise / Feedback',
+    };
+    const message = encodeURIComponent(
+      `*Kristu Mu Nyimbo Feedback*\n` +
+      `Category: ${categoryLabels[feedbackCategory]}\n` +
+      (feedbackHymnNum ? `Hymn #: ${feedbackHymnNum}\n` : '') +
+      (feedbackSender ? `From: ${feedbackSender}\n` : '') +
+      `Message: ${feedbackMessage || 'Greetings from church!'}`
+    );
+    window.open(`https://wa.me/260771500266?text=${message}`, '_blank');
+  };
+
   // Share App via Web Share API or Clipboard
   const handleShareApp = async () => {
     const shareData = {
@@ -408,10 +427,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleCopySupportInfo = () => {
-    const details = `Kristu Mu Nyimbo Digital Ministry Support\nAirtel Money / MTN Mobile Money: +260 97X XXX XXX\nReference: Kristu Mu Nyimbo Hymnal Project\nSeventh-day Adventist Church Zambia Union Conference`;
+    const details = `Kristu Mu Nyimbo Digital Ministry Support\nAirtel Money / Mobile Money: +260771500266 (+260 771 500 266)\nReference: Kristu Mu Nyimbo Hymnal Project\nSeventh-day Adventist Church Zambia Union Conference`;
     navigator.clipboard.writeText(details);
     setIsCopiedSupport(true);
-    showFeedback('Support details copied to clipboard!');
+    showFeedback('Support details (+260771500266) copied to clipboard!');
     setTimeout(() => setIsCopiedSupport(false), 2500);
   };
 
@@ -518,10 +537,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </aside>
 
-
+        {/* Mobile Horizontal Tabs Navigation Bar */}
+        <div className="md:hidden shrink-0 border-b border-stone-200/90 dark:border-stone-800 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+          {categories.map((cat) => {
+            const Icon = cat.icon;
+            const isActive = activeTab === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(cat.id as SettingsTab);
+                  mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer ${
+                  isActive
+                    ? 'bg-amber-900 text-white dark:bg-amber-500 dark:text-stone-950 font-bold shadow-xs'
+                    : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
         {/* Main Full-Screen Scrollable Content Area */}
-        <main ref={mainScrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 lg:px-12 py-6 space-y-6">
+        <main ref={mainScrollRef} className="flex-1 overflow-y-auto px-3 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 space-y-5 sm:space-y-6">
           <div className="max-w-4xl mx-auto space-y-6">
 
             {/* Notification Feedback Toast */}
@@ -669,14 +712,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       Line Spacing
                     </span>
                     <span className="text-[11px] text-stone-500 font-mono">
-                      {lineSpacing === 'loose' ? '2.0x (Loose)' : lineSpacing === 'relaxed' ? '1.75x (Relaxed)' : '1.5x (Normal)'}
+                      {lineSpacing === 'loose' ? '2.3x (Loose)' : lineSpacing === 'relaxed' ? '1.85x (Relaxed)' : '1.5x (Normal)'}
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { id: 'normal', label: 'Normal', desc: '1.5x' },
-                      { id: 'relaxed', label: 'Relaxed', desc: '1.75x' },
-                      { id: 'loose', label: 'Loose', desc: '2.0x' },
+                      { id: 'relaxed', label: 'Relaxed', desc: '1.85x' },
+                      { id: 'loose', label: 'Loose', desc: '2.3x' },
                     ].map((item) => (
                       <button
                         key={item.id}
@@ -746,7 +789,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="text-stone-900 dark:text-stone-100 transition-all"
                   >
                     <h4
-                      className="font-bold text-amber-900 dark:text-amber-400 mb-2"
+                      className="font-bold text-amber-900 dark:text-amber-400 mb-2.5"
                       style={{
                         fontSize: `${Math.min(26, TYPOGRAPHY_CONFIG.textSize[defaultTextSize].titlePx * 0.8)}px`,
                         fontFamily: TYPOGRAPHY_CONFIG.fontFamily[defaultFontFamily],
@@ -755,7 +798,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       Hymn 1 — Mwe Mweo Wandi, Cisheni Muli Lesa
                     </h4>
 
-                    {/* Verse Preview */}
+                    {/* Verse Preview (4 distinct hymn stanzas) */}
                     <div
                       style={{
                         fontSize: `${TYPOGRAPHY_CONFIG.textSize[defaultTextSize].versePx}px`,
@@ -764,9 +807,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       }}
                       className="transition-all"
                     >
-                      <p className="font-medium text-stone-800 dark:text-stone-200">
-                        1. Mwe mweo wandi, cisheni muli Lesa; Nimwe wine wansangulwile lelo. Ndemulumba no mutima onse, Mwe Mupusushi wandi.
-                      </p>
+                      {[
+                        '1. Mwe mweo wandi, cisheni muli Lesa;',
+                        'Nimwe wine wansangulwile lelo.',
+                        'Ndemulumba no mutima onse,',
+                        'Mwe Mupusushi wandi.',
+                      ].map((line, idx) => (
+                        <p
+                          key={idx}
+                          className="font-medium text-stone-800 dark:text-stone-200 transition-all"
+                          style={{
+                            lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                            marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                          }}
+                        >
+                          {line}
+                        </p>
+                      ))}
                     </div>
 
                     {/* Chorus Preview */}
@@ -781,9 +838,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <span className="font-bold uppercase tracking-wider not-italic text-[10px] text-amber-900 dark:text-amber-400 block mb-1">
                         Chorus:
                       </span>
-                      <span className="text-stone-700 dark:text-stone-300">
-                        Citemwiko cakwe cankutemwa; Nimwe mulopwe wandi umupya, Nkalatasha pe na pe!
-                      </span>
+                      {[
+                        'Citemwiko cakwe cankutemwa;',
+                        'Nimwe mulopwe wandi umupya,',
+                        'Nkalatasha pe na pe!',
+                      ].map((cLine, cIdx) => (
+                        <p
+                          key={cIdx}
+                          className="text-stone-700 dark:text-stone-300 transition-all"
+                          style={{
+                            lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                            marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.4}rem`,
+                          }}
+                        >
+                          {cLine}
+                        </p>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -1218,7 +1288,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <span>Submit Feedback (Save Locally)</span>
                     </button>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSendWhatsAppFeedback}
+                        className="px-3.5 py-2 rounded-xl border border-emerald-600/30 hover:border-emerald-600 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 bg-white dark:bg-stone-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+                        title="Send feedback via WhatsApp (+260771500266)"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>WhatsApp (+260771500266)</span>
+                      </button>
                       <button
                         type="button"
                         onClick={handleSendEmailFeedback}
@@ -1391,23 +1470,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* Contribution Info Box */}
-                  <div className="p-3.5 rounded-xl bg-stone-100 dark:bg-stone-900/80 border border-stone-200 dark:border-stone-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-0.5">
-                      <div className="font-bold text-stone-900 dark:text-stone-100">
-                        Zambia Mobile Money & Church Ministry Details:
+                  <div className="p-3.5 sm:p-4 rounded-xl bg-stone-100 dark:bg-stone-900/80 border border-stone-200 dark:border-stone-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+                        <span>Zambia Mobile Money & Ministry Contact:</span>
                       </div>
-                      <div className="text-[11px] text-stone-500 dark:text-stone-400 font-mono">
-                        Airtel / MTN Zambia: +260 97X XXX XXX • Ref: Kristu Mu Nyimbo
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                        <a
+                          href="tel:+260771500266"
+                          className="font-mono font-bold text-amber-900 dark:text-amber-400 hover:underline inline-flex items-center gap-1"
+                          title="Call +260771500266"
+                        >
+                          +260771500266
+                        </a>
+                        <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                          (Airtel / Mobile Money)
+                        </span>
+                        <span className="text-stone-300 dark:text-stone-700 hidden sm:inline">•</span>
+                        <span className="text-[11px] text-stone-600 dark:text-stone-400">
+                          Ref: <strong className="font-semibold text-stone-800 dark:text-stone-200">Kristu Mu Nyimbo</strong>
+                        </span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleCopySupportInfo}
-                      className="px-3.5 py-1.5 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-500 text-stone-700 dark:text-stone-300 hover:text-amber-900 text-xs font-semibold bg-white dark:bg-stone-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                    >
-                      {isCopiedSupport ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{isCopiedSupport ? 'Copied Details' : 'Copy Details'}</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="https://wa.me/260771500266?text=Mwashibukeni!%20I%20would%20like%20to%20support%20the%20Kristu%20Mu%20Nyimbo%20hymnal%20ministry."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-xl border border-emerald-600/30 hover:border-emerald-600 text-emerald-800 dark:text-emerald-300 text-xs font-semibold bg-emerald-50/50 dark:bg-emerald-950/20 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        title="Chat on WhatsApp (+260771500266)"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>WhatsApp</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleCopySupportInfo}
+                        className="px-3.5 py-1.5 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-500 text-stone-700 dark:text-stone-300 hover:text-amber-900 dark:hover:text-amber-400 text-xs font-semibold bg-white dark:bg-stone-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                      >
+                        {isCopiedSupport ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{isCopiedSupport ? 'Copied Details' : 'Copy Details'}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </section>

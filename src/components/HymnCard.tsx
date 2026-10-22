@@ -52,7 +52,14 @@ export const HymnCard: React.FC<HymnCardProps> = ({
 
           <div className="min-w-0">
             {/* Title */}
-            <h3 className="font-hymn-serif text-base sm:text-lg font-semibold text-stone-900 dark:text-stone-100 group-hover:text-amber-900 dark:group-hover:text-amber-400 transition-colors leading-snug">
+            <h3
+              className="font-semibold text-stone-900 dark:text-stone-100 group-hover:text-amber-900 dark:group-hover:text-amber-400 transition-colors leading-snug"
+              style={{
+                fontFamily: 'var(--hymn-font-family, inherit)',
+                fontSize: 'var(--card-title-size, 1.125rem)',
+                lineHeight: '1.3',
+              }}
+            >
               {highlightMatch(hymn.title, searchQuery)}
             </h3>
 

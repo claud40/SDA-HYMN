@@ -35,10 +35,24 @@ export default function App() {
   // Settings modal
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
-  // Initialize theme and typography on app mount
+  // Typography settings state for app-wide reactive rendering
+  const [typography, setTypography] = useState(() => getStoredTypography());
+
+  // Initialize theme and typography on app mount and listen for real-time changes
   useEffect(() => {
     applyThemeToDOM(getStoredThemePreference());
     applyTypographyToDOM(getStoredTypography());
+
+    const handleTypographyChange = (e: any) => {
+      if (e.detail) {
+        setTypography({ ...e.detail });
+      }
+    };
+
+    window.addEventListener('hymnal-typography-change', handleTypographyChange);
+    return () => {
+      window.removeEventListener('hymnal-typography-change', handleTypographyChange);
+    };
   }, []);
 
   // Native IndexedDB storage for hymns, favorites, and recent history
@@ -118,7 +132,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-hymn-sans pb-20 md:pb-8">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-hymn-sans pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-8 overflow-x-hidden">
       {/* Top Bar Header strictly following 3-Zone Top Bar Contract */}
       {/* Top Bar Header with Search & 8-dots button on same line as Kristu Mu Nyimbo */}
       <Header
@@ -136,7 +150,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
 
         {/* View Switcher: Catalog vs Topics vs Favorites vs Service */}
         {activeTab === 'service' ? (
@@ -200,6 +214,7 @@ export default function App() {
           onNavigatePrev={handleNavigatePrev}
           onNavigateNext={handleNavigateNext}
           onOpenDialpad={() => setIsDialpadOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
           hasPrev={hasPrev}
           hasNext={hasNext}
           totalHymnsCount={hymns.length}
