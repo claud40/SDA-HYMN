@@ -305,8 +305,7 @@ export const Header: React.FC<HeaderProps> = ({
       {isMenuOpen && (
         <div className="border-t border-stone-200 dark:border-stone-800 bg-[#FAF8F5] dark:bg-stone-950 shadow-xl transition-all">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-            <div className="text-xs uppercase tracking-wider text-amber-900 dark:text-amber-400 font-semibold mb-3 px-2 flex items-center justify-between">
-              <span>3-Lines Navigation (Umutande wa Nyimbo)</span>
+            <div className="text-xs uppercase tracking-wider text-amber-900 dark:text-amber-400 font-semibold mb-3 px-2 flex items-center justify-end">
               <span className="text-[11px] text-stone-400 font-normal">SDA Bemba Hymnal</span>
             </div>
 
