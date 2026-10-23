@@ -1546,13 +1546,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {/* Contribution Info Box */}
-                  <div className="p-3.5 sm:p-4 rounded-xl bg-stone-100 dark:bg-stone-900/80 border border-stone-200 dark:border-stone-700 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="font-bold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
-                        <span>Zambia Mobile Money & Ministry Contact:</span>
+                  <div className="p-2.5 sm:p-3 rounded-xl bg-stone-100/90 dark:bg-stone-900/80 border border-stone-200 dark:border-stone-700 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5 text-xs">
+                        <Phone className="w-3 h-3 text-amber-700 dark:text-amber-400 shrink-0" />
+                        <span className="truncate">Zambia Mobile Money & Contact:</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-stone-600 dark:text-stone-400">
                         <a
                           href="tel:+260771500266"
                           className="font-mono font-bold text-amber-900 dark:text-amber-400 hover:underline inline-flex items-center gap-1"
@@ -1560,33 +1560,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         >
                           +260771500266
                         </a>
-                        <span className="text-[11px] text-stone-500 dark:text-stone-400">
-                          (Airtel / Mobile Money)
+                        <span className="text-[10px] text-stone-500 dark:text-stone-400">
+                          (Airtel Money)
                         </span>
                         <span className="text-stone-300 dark:text-stone-700 hidden sm:inline">•</span>
-                        <span className="text-[11px] text-stone-600 dark:text-stone-400">
-                          Ref: <strong className="font-semibold text-stone-800 dark:text-stone-200">Kristu Mu Nyimbo</strong>
+                        <span className="text-[10px]">
+                          Ref: <strong className="font-medium text-stone-800 dark:text-stone-200">Kristu Mu Nyimbo</strong>
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <a
                         href="https://wa.me/260771500266?text=Mwashibukeni!%20I%20would%20like%20to%20support%20the%20Kristu%20Mu%20Nyimbo%20hymnal%20ministry."
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-xl border border-emerald-600/30 hover:border-emerald-600 text-emerald-800 dark:text-emerald-300 text-xs font-semibold bg-emerald-50/50 dark:bg-emerald-950/20 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg border border-emerald-600/30 hover:border-emerald-600 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold bg-emerald-50/50 dark:bg-emerald-950/20 flex items-center justify-center gap-1 transition-colors cursor-pointer"
                         title="Chat on WhatsApp (+260771500266)"
                       >
-                        <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <MessageCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                         <span>WhatsApp</span>
                       </a>
                       <button
                         type="button"
                         onClick={handleCopySupportInfo}
-                        className="px-3.5 py-1.5 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-500 text-stone-700 dark:text-stone-300 hover:text-amber-900 dark:hover:text-amber-400 text-xs font-semibold bg-white dark:bg-stone-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                        className="px-2.5 py-1 rounded-lg border border-stone-300 dark:border-stone-700 hover:border-amber-500 text-stone-700 dark:text-stone-300 hover:text-amber-900 dark:hover:text-amber-400 text-[11px] font-semibold bg-white dark:bg-stone-800 flex items-center justify-center gap-1 transition-colors cursor-pointer shrink-0"
                       >
-                        {isCopiedSupport ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{isCopiedSupport ? 'Copied Details' : 'Copy Details'}</span>
+                        {isCopiedSupport ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        <span>{isCopiedSupport ? 'Copied' : 'Copy'}</span>
                       </button>
                     </div>
                   </div>
