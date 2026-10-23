@@ -55,9 +55,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
       {/* Main Center Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-sm w-full space-y-6">
-        {/* Glowing Adventist Emblem */}
+        {/* Adventist Emblem */}
         <div className="relative">
-          <div className="absolute -inset-6 bg-amber-500/25 rounded-full blur-2xl animate-pulse" />
           <div className="relative p-4 rounded-3xl bg-white shadow-2xl ring-2 ring-amber-500/40 flex items-center justify-center">
             <img
               src="/assets/aistudio/image_0ecea644.png"

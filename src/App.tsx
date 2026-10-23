@@ -17,8 +17,8 @@ import { applyTypographyToDOM, getStoredTypography } from './utils/typography';
 import { sanitizeSearchQuery, matchHymnByQuery, MAX_SEARCH_LENGTH } from './utils/searchSanitizer';
 
 export default function App() {
-  // Opening splash screen featuring official Adventist logo
-  const [showSplash, setShowSplash] = useState<boolean>(true);
+  // Opening splash screen (disabled by default so hymnal opens immediately)
+  const [showSplash, setShowSplash] = useState<boolean>(false);
 
   // Navigation tabs: 'catalog' | 'topics' | 'favorites' | 'service'
   const [activeTab, setActiveTab] = useState<'catalog' | 'topics' | 'favorites' | 'service'>('catalog');

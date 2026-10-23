@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Delete, ArrowRight, X, Hash } from 'lucide-react';
+import { Check, X, Hash } from 'lucide-react';
 import { SAMPLE_HYMNS, Hymn } from '../data/hymns';
 
 interface NumericDialpadModalProps {
@@ -111,11 +111,16 @@ export const NumericDialpadModal: React.FC<NumericDialpadModalProps> = ({
               </span>
             </div>
             {/* Real-time matched hymn preview */}
-            <div className="min-h-4 mt-0.5">
+            <div className="min-h-5 mt-0.5">
               {matchedHymn ? (
-                <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-400 truncate">
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  className="text-[11px] font-semibold text-amber-800 dark:text-amber-400 truncate hover:underline cursor-pointer transition-colors"
+                  title="Click to open hymn"
+                >
                   #{matchedHymn.number} · {matchedHymn.title}
-                </p>
+                </button>
               ) : digits ? (
                 <p className="text-[11px] text-stone-400 truncate">
                   Tapali nyimbo #{digits} (Try 1, 7, 18, 33, 49)
@@ -139,7 +144,8 @@ export const NumericDialpadModal: React.FC<NumericDialpadModalProps> = ({
             <button
               type="button"
               onClick={handleClear}
-              className="h-10 sm:h-11 min-h-[40px] rounded-lg text-xs font-medium text-stone-600 dark:text-stone-400 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800/60 dark:hover:bg-stone-700 active:scale-95 transition-all flex items-center justify-center"
+              aria-label="Futa (Clear)"
+              className="h-10 sm:h-11 min-h-[40px] rounded-lg text-xs font-bold text-white bg-red-700 hover:bg-red-800 dark:bg-red-800 dark:hover:bg-red-700 shadow-xs active:scale-95 transition-all flex items-center justify-center cursor-pointer"
             >
               Futa (Clear)
             </button>
@@ -152,28 +158,12 @@ export const NumericDialpadModal: React.FC<NumericDialpadModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={handleBackspace}
-              aria-label="Delete last digit"
-              className="h-10 sm:h-11 min-h-[40px] rounded-lg text-stone-600 dark:text-stone-400 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800/60 dark:hover:bg-stone-700 active:scale-95 transition-all flex items-center justify-center"
-            >
-              <Delete className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Action Button */}
-          <div className="p-3 sm:p-3.5 pt-0">
-            <button
-              type="button"
-              disabled={!matchedHymn}
               onClick={handleConfirm}
-              className={`w-full h-10 min-h-[40px] rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs ${
-                matchedHymn
-                  ? 'bg-amber-800 hover:bg-amber-900 text-white active:scale-[0.98]'
-                  : 'bg-stone-200 text-stone-400 dark:bg-stone-800 dark:text-stone-600 cursor-not-allowed'
-              }`}
+              aria-label="OK (Open Hymn)"
+              className="h-10 sm:h-11 min-h-[40px] rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer"
             >
-              <span>Isuleni Nyimbo (Open Hymn)</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Check className="w-4 h-4 stroke-[2.5]" />
+              <span>OK</span>
             </button>
           </div>
         </div>
