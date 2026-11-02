@@ -14,6 +14,7 @@ const PRECACHE_ASSETS = [
   '/sda-logo.svg',
   '/adventist-logo.png',
   '/assets/aistudio/image_0ecea644.png',
+  '/data/hymns.json',
 ];
 
 // Precache essential application shell on install

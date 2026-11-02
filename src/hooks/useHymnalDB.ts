@@ -18,6 +18,7 @@ export function useHymnalDB() {
 
     async function loadData() {
       try {
+        await hymnalDB.fetchAndSyncStaticHymns();
         const [loadedHymns, loadedFavorites, loadedRecent, loadedPlan] = await Promise.all([
           hymnalDB.getAllHymns(),
           hymnalDB.getFavoriteIds(),
@@ -75,6 +76,15 @@ export function useHymnalDB() {
     return result;
   }, []);
 
+  const deleteHymn = useCallback(async (hymnId: string) => {
+    const success = await hymnalDB.deleteHymn(hymnId);
+    if (success) {
+      const refreshed = await hymnalDB.getAllHymns();
+      setHymns(refreshed);
+    }
+    return success;
+  }, []);
+
   const importHymns = useCallback(async (candidates: unknown[]) => {
     const result = await hymnalDB.importHymns(candidates);
     if (result.importedCount > 0) {
@@ -82,6 +92,12 @@ export function useHymnalDB() {
       setHymns(refreshed);
     }
     return result;
+  }, []);
+
+  const reloadHymns = useCallback(async () => {
+    const refreshed = await hymnalDB.getAllHymns();
+    setHymns(refreshed);
+    return refreshed;
   }, []);
 
   return {
@@ -93,6 +109,8 @@ export function useHymnalDB() {
     toggleFavorite,
     recordRecentHymn,
     saveHymn,
+    deleteHymn,
     importHymns,
+    reloadHymns,
   };
 }

@@ -98,9 +98,13 @@ export function validateHymnRecord(candidate: unknown): HymnValidationResult {
     ? raw.id.trim()
     : `hymn-${hymnNumber}`;
 
+  const cleanTune = (typeof raw.englishTune === 'string' && raw.englishTune.trim().length > 0)
+    ? raw.englishTune.trim()
+    : (typeof raw.writer === 'string' && raw.writer.trim().length > 0 ? raw.writer.trim() : '');
+
   const cleanWriter = (typeof raw.writer === 'string' && raw.writer.trim().length > 0)
     ? raw.writer.trim()
-    : 'Traditional';
+    : cleanTune;
 
   const cleanCategory = (typeof raw.category === 'string' && raw.category.trim().length > 0)
     ? raw.category.trim()
@@ -109,10 +113,6 @@ export function validateHymnRecord(candidate: unknown): HymnValidationResult {
   const cleanCategoryBemba = (typeof raw.categoryBemba === 'string' && raw.categoryBemba.trim().length > 0)
     ? raw.categoryBemba.trim()
     : 'Ukupepa no Kulumbanya';
-
-  const cleanTune = (typeof raw.englishTune === 'string' && raw.englishTune.trim().length > 0)
-    ? raw.englishTune.trim()
-    : `Traditional Hymn Tune #${hymnNumber}`;
 
   const cleanKey = (typeof raw.key === 'string' && raw.key.trim().length > 0)
     ? raw.key.trim()
@@ -139,6 +139,22 @@ export function validateHymnRecord(candidate: unknown): HymnValidationResult {
     }
   }
 
+  // Safe English Verses & Chorus (if present)
+  let cleanEnglishVerses: string[][] | undefined;
+  if (Array.isArray(raw.englishVerses) && raw.englishVerses.length > 0) {
+    cleanEnglishVerses = raw.englishVerses
+      .filter((v: unknown): v is string[] => Array.isArray(v))
+      .map((v: string[]) => v.map((l) => (typeof l === 'string' ? l.trim() : '')).filter((l) => l.length > 0))
+      .filter((v: string[]) => v.length > 0);
+  }
+
+  let cleanEnglishChorus: string[] | null | undefined;
+  if (Array.isArray(raw.englishChorus) && raw.englishChorus.length > 0) {
+    cleanEnglishChorus = raw.englishChorus
+      .map((l: unknown) => (typeof l === 'string' ? l.trim() : ''))
+      .filter((l: string) => l.length > 0);
+  }
+
   const validHymn: Hymn = {
     id: cleanId,
     number: hymnNumber,
@@ -153,7 +169,9 @@ export function validateHymnRecord(candidate: unknown): HymnValidationResult {
     verses: cleanVerses,
     chorus: cleanChorus,
     chorusLabel: cleanChorusLabel,
-    isSample: true,
+    englishVerses: cleanEnglishVerses && cleanEnglishVerses.length > 0 ? cleanEnglishVerses : undefined,
+    englishChorus: cleanEnglishChorus && cleanEnglishChorus.length > 0 ? cleanEnglishChorus : undefined,
+    isSample: typeof raw.isSample === 'boolean' ? raw.isSample : false,
     melodicPreview,
   };
 
@@ -187,7 +205,13 @@ export function validateAndDeduplicateHymns(candidates: unknown[]): BatchValidat
       duplicateCount++;
       // If the duplicate has richer verse content, prefer it; otherwise keep existing
       const existing = hymnsByNumber.get(hymn.number)!;
-      if (hymn.verses.length > existing.verses.length || (hymn.chorus && !existing.chorus)) {
+      // Real hymns always replace sample hymns; otherwise prefer richer/updated content
+      if (
+        (!hymn.isSample && existing.isSample) ||
+        hymn.verses.length > existing.verses.length ||
+        (hymn.chorus && !existing.chorus) ||
+        (!hymn.isSample && !existing.isSample)
+      ) {
         hymnsByNumber.set(hymn.number, hymn);
       }
     } else {
@@ -207,7 +231,7 @@ export function validateAndDeduplicateHymns(candidates: unknown[]): BatchValidat
 
 /**
  * Ensures baseline hymns are never deleted or corrupted.
- * Merges loaded hymns with the default baseline, ensuring no duplicates.
+ * Merges loaded hymns with the default baseline, ensuring real hymns supersede sample hymns.
  */
 export function mergeWithDefaultHymns(
   existingHymns: Hymn[],
@@ -223,7 +247,10 @@ export function mergeWithDefaultHymns(
   // Then overlay existing valid hymns
   for (const h of existingHymns) {
     if (h && typeof h.number === 'number' && h.number > 0) {
-      map.set(h.number, h);
+      const current = map.get(h.number);
+      if (!current || !h.isSample || (h.isSample && current.isSample)) {
+        map.set(h.number, h);
+      }
     }
   }
 

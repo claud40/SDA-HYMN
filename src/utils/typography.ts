@@ -6,6 +6,7 @@ export interface TypographySettings {
   textSize: TextSizePreference;
   lineSpacing: LineSpacingPreference;
   fontFamily: FontPreference;
+  isBold?: boolean;
 }
 
 export const TYPOGRAPHY_CONFIG = {
@@ -64,12 +65,13 @@ export const TYPOGRAPHY_CONFIG = {
 
 export const getStoredTypography = (): TypographySettings => {
   if (typeof window === 'undefined') {
-    return { textSize: 'large', lineSpacing: 'relaxed', fontFamily: 'serif' };
+    return { textSize: 'large', lineSpacing: 'relaxed', fontFamily: 'serif', isBold: false };
   }
   const textSize = (localStorage.getItem('hymnal_text_size') as TextSizePreference) || 'large';
   const lineSpacing = (localStorage.getItem('hymnal_line_spacing') as LineSpacingPreference) || 'relaxed';
   const fontFamily = (localStorage.getItem('hymnal_font_family') as FontPreference) || 'serif';
-  return { textSize, lineSpacing, fontFamily };
+  const isBold = localStorage.getItem('hymnal_bold_text') === 'true';
+  return { textSize, lineSpacing, fontFamily, isBold };
 };
 
 export const applyTypographyToDOM = (settings: TypographySettings) => {
@@ -79,6 +81,8 @@ export const applyTypographyToDOM = (settings: TypographySettings) => {
   const sizeCfg = TYPOGRAPHY_CONFIG.textSize[settings.textSize] || TYPOGRAPHY_CONFIG.textSize.large;
   const spacingCfg = TYPOGRAPHY_CONFIG.lineSpacing[settings.lineSpacing] || TYPOGRAPHY_CONFIG.lineSpacing.relaxed;
   const fontVal = TYPOGRAPHY_CONFIG.fontFamily[settings.fontFamily] || TYPOGRAPHY_CONFIG.fontFamily.serif;
+  const isBold = settings.isBold ?? (localStorage.getItem('hymnal_bold_text') === 'true');
+  const fontWeightVal = isBold ? '700' : '400';
 
   // Set CSS variables on root and body for immediate global reactivity
   const lineGap = `${(spacingCfg.multiplier - 1) * 0.45}rem`;
@@ -91,6 +95,7 @@ export const applyTypographyToDOM = (settings: TypographySettings) => {
   root.style.setProperty('--hymn-line-gap', lineGap);
   root.style.setProperty('--card-title-size', cardTitlePx);
   root.style.setProperty('--hymn-font-family', fontVal);
+  root.style.setProperty('--hymn-font-weight', fontWeightVal);
 
   if (document.body) {
     document.body.style.setProperty('--hymn-verse-size', `${sizeCfg.versePx}px`);
@@ -100,15 +105,18 @@ export const applyTypographyToDOM = (settings: TypographySettings) => {
     document.body.style.setProperty('--hymn-line-gap', lineGap);
     document.body.style.setProperty('--card-title-size', cardTitlePx);
     document.body.style.setProperty('--hymn-font-family', fontVal);
+    document.body.style.setProperty('--hymn-font-weight', fontWeightVal);
   }
 
   root.dataset.hymnTextSize = settings.textSize;
   root.dataset.hymnLineSpacing = settings.lineSpacing;
   root.dataset.hymnFont = settings.fontFamily;
+  root.dataset.hymnBold = String(isBold);
 
   localStorage.setItem('hymnal_text_size', settings.textSize);
   localStorage.setItem('hymnal_line_spacing', settings.lineSpacing);
   localStorage.setItem('hymnal_font_family', settings.fontFamily);
+  localStorage.setItem('hymnal_bold_text', String(isBold));
 
   // Broadcast event for all active components
   window.dispatchEvent(

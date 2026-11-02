@@ -36,10 +36,18 @@ import {
   Gift,
   ThumbsUp,
   AlertCircle,
-  Phone
+  Phone,
+  Database,
+  Upload,
+  Download,
+  RefreshCw,
+  Plus,
+  HardDrive
 } from 'lucide-react';
 import { Hymn, SAMPLE_HYMNS } from '../data/hymns';
 import { AdventistLogo } from './AdventistLogo';
+import { hymnalDB } from '../services/db';
+import { AddHymnModal } from './AddHymnModal';
 import { sanitizePlainText, sanitizeHymnNumber } from '../utils/searchSanitizer';
 import {
   applyThemeToDOM,
@@ -69,9 +77,13 @@ export interface SettingsModalProps {
   onViewFavorites?: () => void;
   onClearRecentHistory?: () => void;
   onShowSplashScreen?: () => void;
+  onSaveHymn?: (hymn: unknown) => Promise<{ success: boolean; hymn?: Hymn; error?: string }>;
+  onImportHymns?: (candidates: unknown[]) => Promise<{ importedCount: number; rejectedCount: number; duplicateCount: number; totalHymns: number }>;
+  onDeleteHymn?: (hymnId: string) => Promise<boolean>;
+  onSyncStaticJSON?: () => Promise<unknown>;
 }
 
-type SettingsTab = 'all' | 'appearance' | 'reading' | 'preferences' | 'feedback' | 'support' | 'about';
+type SettingsTab = 'all' | 'appearance' | 'reading' | 'preferences' | 'database' | 'feedback' | 'support' | 'about';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -83,6 +95,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onViewFavorites,
   onClearRecentHistory,
   onShowSplashScreen,
+  onSaveHymn,
+  onImportHymns,
+  onDeleteHymn,
+  onSyncStaticJSON,
 }) => {
   // Active settings section tab for easy navigation
   const [activeTab, setActiveTab] = useState<SettingsTab>('all');
@@ -99,6 +115,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   });
   const [defaultFontFamily, setDefaultFontFamily] = useState<DefaultFontFamily>(() => {
     return (localStorage.getItem('hymnal_font_family') as DefaultFontFamily) || 'serif';
+  });
+  const [isBoldText, setIsBoldText] = useState<boolean>(() => {
+    return localStorage.getItem('hymnal_bold_text') === 'true';
   });
 
   // Language
@@ -176,6 +195,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setDefaultTextSize((localStorage.getItem('hymnal_text_size') as DefaultTextSize) || 'large');
       setLineSpacing((localStorage.getItem('hymnal_line_spacing') as LineSpacingPreference) || 'relaxed');
       setDefaultFontFamily((localStorage.getItem('hymnal_font_family') as DefaultFontFamily) || 'serif');
+      setIsBoldText(localStorage.getItem('hymnal_bold_text') === 'true');
       setAppLang((localStorage.getItem('hymnal_app_lang') as AppLanguage) || 'bemba');
       setAutoScrollEnabled(localStorage.getItem('hymnal_autoscroll_enabled') === 'true');
       setAutoScrollSpeed((localStorage.getItem('hymnal_autoscroll_speed') as AutoScrollSpeed) || 'normal');
@@ -228,6 +248,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       textSize: size,
       lineSpacing,
       fontFamily: defaultFontFamily,
+      isBold: isBoldText,
     });
     showFeedback(`Text size set to: ${TYPOGRAPHY_CONFIG.textSize[size].label} (${TYPOGRAPHY_CONFIG.textSize[size].desc})`);
   };
@@ -239,6 +260,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       textSize: defaultTextSize,
       lineSpacing: spacing,
       fontFamily: defaultFontFamily,
+      isBold: isBoldText,
     });
     showFeedback(`Line spacing set to: ${TYPOGRAPHY_CONFIG.lineSpacing[spacing].label} (${TYPOGRAPHY_CONFIG.lineSpacing[spacing].desc})`);
   };
@@ -250,8 +272,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       textSize: defaultTextSize,
       lineSpacing,
       fontFamily: font,
+      isBold: isBoldText,
     });
     showFeedback(`Font family set to: ${font === 'serif' ? 'Traditional Lora Serif' : 'Modern Clean Sans'}`);
+  };
+
+  // Projector Bold Text toggle
+  const handleToggleBoldText = () => {
+    const next = !isBoldText;
+    setIsBoldText(next);
+    applyTypographyToDOM({
+      textSize: defaultTextSize,
+      lineSpacing,
+      fontFamily: defaultFontFamily,
+      isBold: next,
+    });
+    showFeedback(next ? 'Projector Bold Mode enabled (Amalembo yakosa)' : 'Normal text weight restored');
   };
 
   // Language
@@ -312,6 +348,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     handleSelectTextSize('large');
     handleSelectLineSpacing('relaxed');
     handleSelectFontFamily('serif');
+    setIsBoldText(false);
+    localStorage.setItem('hymnal_bold_text', 'false');
     handleSelectLanguage('bemba');
     setAutoScrollEnabled(false);
     localStorage.setItem('hymnal_autoscroll_enabled', 'false');
@@ -497,6 +535,70 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => setIsCopiedSupport(false), 2500);
   };
 
+  // Database & Hymn Management State
+  const [isAddHymnOpen, setIsAddHymnOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportJSON = () => {
+    try {
+      const jsonStr = JSON.stringify(allHymns, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kristu_mu_nyimbo_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showFeedback(`Database exported successfully (${allHymns.length} hymns)!`);
+    } catch {
+      showFeedback('Failed to export hymnal data.');
+    }
+  };
+
+  const handleImportJSONFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) {
+          if (onImportHymns) {
+            const res = await onImportHymns(parsed);
+            showFeedback(`Imported ${res.importedCount} hymns into IndexedDB! Total: ${res.totalHymns}`);
+          } else {
+            const res = await hymnalDB.importHymns(parsed);
+            showFeedback(`Imported ${res.importedCount} hymns into IndexedDB! Total: ${res.totalHymns}`);
+          }
+        } else {
+          showFeedback('Error: JSON file must contain an array of hymns.');
+        }
+      } catch {
+        showFeedback('Failed to read or parse JSON file.');
+      } finally {
+        if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleSyncStaticJSON = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await hymnalDB.fetchAndSyncStaticHymns();
+      if (onSyncStaticJSON) await onSyncStaticJSON();
+      showFeedback(`Synced with /data/hymns.json (${res.importedCount} new hymns added, total: ${res.totalHymns})`);
+    } catch {
+      showFeedback('Sync completed.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const categories = [
@@ -504,6 +606,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: 'appearance', label: 'Appearance & Text', icon: Sun },
     { id: 'reading', label: 'Reading Options', icon: BookOpen },
     { id: 'preferences', label: 'My Preferences', icon: Bookmark },
+    { id: 'database', label: 'Database & Ingest', icon: Database },
     { id: 'feedback', label: 'Feedback & Rating', icon: MessageSquare },
     { id: 'support', label: 'Share & Support Us', icon: Heart },
     { id: 'about', label: 'About & User Guide', icon: Sparkles },
@@ -835,6 +938,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
+                {/* Projector / Screen Bold Option */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-stone-50/80 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-800 gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-900/10 dark:bg-amber-400/10 text-amber-900 dark:text-amber-400 flex items-center justify-center shrink-0 font-bold font-serif text-base border border-amber-900/20 dark:border-amber-400/20">
+                      B
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                        <span>Projector Screen Bold Mode</span>
+                        <span className="text-[10px] font-semibold bg-amber-900/10 dark:bg-amber-400/20 text-amber-900 dark:text-amber-300 px-2 py-0.5 rounded-md">
+                          Church Screen
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+                        Makes lyrics bold for crystal clear visibility on wall projectors, church screens, and TVs
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleToggleBoldText}
+                    className={`w-11 h-6 rounded-full transition-colors relative focus:outline-hidden cursor-pointer shrink-0 self-start sm:self-auto ${
+                      isBoldText ? 'bg-amber-900 dark:bg-amber-500' : 'bg-stone-300 dark:bg-stone-700'
+                    }`}
+                    role="switch"
+                    aria-checked={isBoldText}
+                    aria-label="Toggle Projector Bold text"
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${
+                        isBoldText ? 'left-6' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
                 {/* LIVE LYRICS PREVIEW BOX */}
                 <div className="mt-3 rounded-2xl p-4 sm:p-5 border border-amber-800/30 dark:border-amber-600/30 bg-[#FAF8F5] dark:bg-stone-950 transition-colors">
                   <div className="flex items-center justify-between pb-2 border-b border-amber-800/20 dark:border-amber-600/20 mb-3">
@@ -858,7 +998,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         fontFamily: TYPOGRAPHY_CONFIG.fontFamily[defaultFontFamily],
                       }}
                     >
-                      Hymn 1 — Mwe Mweo Wandi, Cisheni Muli Lesa
+                      Hymn 1 — Lishisheni Ulupenga
                     </h4>
 
                     {/* Verse Preview (4 distinct hymn stanzas) */}
@@ -867,19 +1007,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         fontSize: `${TYPOGRAPHY_CONFIG.textSize[defaultTextSize].versePx}px`,
                         lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
                         fontFamily: TYPOGRAPHY_CONFIG.fontFamily[defaultFontFamily],
+                        fontWeight: isBoldText ? 700 : 400,
                       }}
                       className="transition-all"
                     >
                       {[
-                        '1. Mwe mweo wandi, cisheni muli Lesa;',
-                        'Nimwe wine wansangulwile lelo.',
-                        'Ndemulumba no mutima onse,',
-                        'Mwe Mupusushi wandi.',
+                        '1. Lishisheni ulupenga,',
+                        'Mucenjeshe na bonse.',
+                        'Bonse baleumfwe landwe,',
+                        'Babwelela ku mwabo.',
                       ].map((line, idx) => (
                         <p
                           key={idx}
-                          className="font-medium text-stone-800 dark:text-stone-200 transition-all"
+                          className="text-stone-800 dark:text-stone-200 transition-all"
                           style={{
+                            fontWeight: isBoldText ? 700 : 400,
                             lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
                             marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
                           }}
@@ -896,20 +1038,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         fontSize: `${Math.max(14, TYPOGRAPHY_CONFIG.textSize[defaultTextSize].versePx - 2)}px`,
                         lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
                         fontFamily: TYPOGRAPHY_CONFIG.fontFamily[defaultFontFamily],
+                        fontWeight: isBoldText ? 700 : 500,
                       }}
                     >
                       <span className="font-bold uppercase tracking-wider not-italic text-[10px] text-amber-900 dark:text-amber-400 block mb-1">
-                        Chorus:
+                        Chibwekesho:
                       </span>
                       {[
-                        'Citemwiko cakwe cankutemwa;',
-                        'Nimwe mulopwe wandi umupya,',
-                        'Nkalatasha pe na pe!',
+                        'Lishisheni ulupenga.',
+                        'Lishisheni konse fye.',
+                        'Lesa atupela bonse.',
+                        "Kusose 'landwe Iyakwe.",
                       ].map((cLine, cIdx) => (
                         <p
                           key={cIdx}
                           className="text-stone-700 dark:text-stone-300 transition-all"
                           style={{
+                            fontWeight: isBoldText ? 700 : 500,
                             lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
                             marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.4}rem`,
                           }}
@@ -1113,6 +1258,121 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       No recently viewed hymns recorded yet.
                     </p>
                   )}
+                </div>
+              </section>
+            )}
+
+            {/* ========================================================
+                SECTION: DATABASE & REAL HYMN INGESTION
+               ======================================================== */}
+            {(activeTab === 'all' || activeTab === 'database') && (
+              <section className="bg-white dark:bg-stone-900/80 rounded-2xl p-4 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-2">
+                    <Database className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                    <span>Hymnal Database & Content Management</span>
+                  </label>
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>IndexedDB Ready (100% Offline)</span>
+                  </span>
+                </div>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  Manage the local hymn catalog, add new verified Bemba hymns one-by-one into IndexedDB, import structured JSON datasets, or export backup files.
+                </p>
+
+                {/* Database Metrics Card */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Total Hymns</div>
+                    <div className="text-lg font-bold font-mono text-stone-900 dark:text-stone-100 mt-0.5">
+                      {allHymns.length} <span className="text-xs font-sans font-normal text-stone-500">nyimbo</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Offline Status</div>
+                    <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Cached Locally</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Database Engine</div>
+                    <div className="text-xs font-bold text-stone-800 dark:text-stone-200 mt-1">
+                      IndexedDB (v1)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Primary Action: Add Hymn 1 by 1 */}
+                <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-600/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-900 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Plus className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
+                        Lundeniko Nyimbo Ipyani (Add Real Hymn 1 by 1)
+                      </h4>
+                      <p className="text-[11px] text-stone-600 dark:text-stone-400">
+                        Type or paste a real Bemba hymn with verses, chorus, and tune info directly into IndexedDB.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsAddHymnOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Lundeniko (Add Hymn)</span>
+                  </button>
+                </div>
+
+                {/* Secondary Actions: Import, Export, Sync */}
+                <div className="pt-2 border-t border-stone-200/80 dark:border-stone-800 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  {/* Hidden File Input */}
+                  <input
+                    type="file"
+                    ref={jsonFileInputRef}
+                    onChange={handleImportJSONFile}
+                    accept=".json,application/json"
+                    className="hidden"
+                  />
+
+                  {/* Import Button */}
+                  <button
+                    type="button"
+                    onClick={() => jsonFileInputRef.current?.click()}
+                    className="p-3 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center gap-2 font-medium transition-colors cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                    <span>Import JSON File</span>
+                  </button>
+
+                  {/* Export Button */}
+                  <button
+                    type="button"
+                    onClick={handleExportJSON}
+                    className="p-3 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center gap-2 font-medium transition-colors cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                    <span>Export Backup (JSON)</span>
+                  </button>
+
+                  {/* Sync Button */}
+                  <button
+                    type="button"
+                    onClick={handleSyncStaticJSON}
+                    disabled={isSyncing}
+                    className="p-3 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center gap-2 font-medium transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-4 h-4 text-amber-700 dark:text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span>{isSyncing ? 'Syncing...' : 'Sync /data/hymns.json'}</span>
+                  </button>
                 </div>
               </section>
             )}
@@ -1917,6 +2177,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Hymn Modal for Real Hymn Ingestion */}
+      {isAddHymnOpen && (
+        <AddHymnModal
+          isOpen={isAddHymnOpen}
+          onClose={() => setIsAddHymnOpen(false)}
+          onSaveHymn={async (candidate) => {
+            if (onSaveHymn) {
+              const res = await onSaveHymn(candidate);
+              if (res.success && res.hymn && onSelectHymn) {
+                onSelectHymn(res.hymn);
+              }
+              return res;
+            } else {
+              const res = await hymnalDB.saveHymn(candidate);
+              if (res.success && res.hymn && onSelectHymn) {
+                onSelectHymn(res.hymn);
+              }
+              return res;
+            }
+          }}
+          existingNumbers={allHymns.map((h) => h.number)}
+        />
       )}
     </div>
   );

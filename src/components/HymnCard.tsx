@@ -65,16 +65,13 @@ export const HymnCard: React.FC<HymnCardProps> = ({
               {highlightMatch(hymn.title, searchQuery)}
             </h3>
 
-            {/* Hymn Writer & Stanzas */}
+            {/* English Title & Stanzas */}
             <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 flex items-center flex-wrap gap-x-2 gap-y-0.5">
-              <span className="truncate max-w-[200px]">
-                <span className="text-[11px] uppercase tracking-wider font-semibold text-amber-800 dark:text-amber-400 mr-1.5">
-                  Writer:
+              {(hymn.englishTune || hymn.writer) && (
+                <span className="truncate max-w-[220px] italic text-stone-600 dark:text-stone-300 font-medium">
+                  {highlightMatch(hymn.englishTune || hymn.writer, searchQuery)}
                 </span>
-                <span className="font-medium text-stone-700 dark:text-stone-300">
-                  {highlightMatch(hymn.writer, searchQuery)}
-                </span>
-              </span>
+              )}
               <span className="text-stone-300 dark:text-stone-700">•</span>
               <span className="text-xs text-stone-400 dark:text-stone-500">
                 {verseCount} {verseCount === 1 ? 'cikomo' : 'fikomo'}

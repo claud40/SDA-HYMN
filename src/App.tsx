@@ -64,6 +64,10 @@ export default function App() {
     recentHymns,
     toggleFavorite,
     recordRecentHymn,
+    saveHymn,
+    deleteHymn,
+    importHymns,
+    reloadHymns,
   } = useHymnalDB();
 
   const handleOpenHymn = (hymn: Hymn) => {
@@ -251,6 +255,10 @@ export default function App() {
           setIsSettingsOpen(false);
         }}
         onShowSplashScreen={() => setShowSplash(true)}
+        onSaveHymn={saveHymn}
+        onImportHymns={importHymns}
+        onDeleteHymn={deleteHymn}
+        onSyncStaticJSON={reloadHymns}
       />
 
       {/* Mobile-First Bottom Navigation Bar */}

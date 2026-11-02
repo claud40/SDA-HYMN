@@ -81,14 +81,29 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
   const [fontPref, setFontPref] = useState<FontPreference>(() => {
     return getStoredTypography().fontFamily;
   });
+  const [isBoldText, setIsBoldText] = useState<boolean>(() => {
+    return localStorage.getItem('hymnal_bold_text') === 'true';
+  });
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [activeNoteIdx, setActiveNoteIdx] = useState<number>(-1);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState<boolean>(() => {
     return localStorage.getItem('hymnal_autoscroll_enabled') === 'true';
   });
+  const [lyricsLang, setLyricsLang] = useState<'side-by-side' | 'bemba' | 'english'>(() => {
+    return hymn.englishVerses && hymn.englishVerses.length > 0 ? 'side-by-side' : 'bemba';
+  });
   const readerContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Reset lyrics language on hymn change to side-by-side if English lyrics exist
+  useEffect(() => {
+    if (hymn.englishVerses && hymn.englishVerses.length > 0) {
+      setLyricsLang('side-by-side');
+    } else {
+      setLyricsLang('bemba');
+    }
+  }, [hymn.id]);
 
   // Sync theme changes if app theme changes while reader is open
   useEffect(() => {
@@ -109,6 +124,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
       if (e.detail?.textSize) setTextSize(e.detail.textSize);
       if (e.detail?.lineSpacing) setLineSpacing(e.detail.lineSpacing);
       if (e.detail?.fontFamily) setFontPref(e.detail.fontFamily);
+      if (typeof e.detail?.isBold === 'boolean') setIsBoldText(e.detail.isBold);
       if (typeof e.detail?.autoScrollEnabled === 'boolean') {
         setIsAutoScrolling(e.detail.autoScrollEnabled);
       }
@@ -248,7 +264,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
     if (currIdx < sequence.length - 1) {
       const next = sequence[currIdx + 1];
       setTextSize(next);
-      applyTypographyToDOM({ textSize: next, lineSpacing, fontFamily: fontPref });
+      applyTypographyToDOM({ textSize: next, lineSpacing, fontFamily: fontPref, isBold: isBoldText });
     }
   };
 
@@ -258,14 +274,20 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
     if (currIdx > 0) {
       const next = sequence[currIdx - 1];
       setTextSize(next);
-      applyTypographyToDOM({ textSize: next, lineSpacing, fontFamily: fontPref });
+      applyTypographyToDOM({ textSize: next, lineSpacing, fontFamily: fontPref, isBold: isBoldText });
     }
   };
 
   const handleToggleFontPref = () => {
     const next: FontPreference = fontPref === 'serif' ? 'sans' : 'serif';
     setFontPref(next);
-    applyTypographyToDOM({ textSize, lineSpacing, fontFamily: next });
+    applyTypographyToDOM({ textSize, lineSpacing, fontFamily: next, isBold: isBoldText });
+  };
+
+  const handleToggleBold = () => {
+    const next = !isBoldText;
+    setIsBoldText(next);
+    applyTypographyToDOM({ textSize, lineSpacing, fontFamily: fontPref, isBold: next });
   };
 
   const themeStyles = {
@@ -534,6 +556,20 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
             <span className="font-bold">{fontPref === 'serif' ? 'Serif' : 'Sans'}</span>
           </button>
 
+          {/* Projector / Screen Bold Toggle */}
+          <button
+            onClick={handleToggleBold}
+            className={`h-8 w-8 rounded-lg font-serif font-black text-sm shrink-0 transition-colors cursor-pointer active:scale-95 flex items-center justify-center ${
+              isBoldText
+                ? 'bg-amber-900 text-white shadow-xs'
+                : themeStyles.btnSecondary
+            }`}
+            title={isBoldText ? 'Projector Bold: On (Click to turn off)' : 'Projector Bold: Off (Click for projector screen visibility)'}
+            aria-label="Toggle Projector Bold text"
+          >
+            B
+          </button>
+
           {/* Text Size Stepper */}
           <div className="flex items-center rounded-lg overflow-hidden border border-stone-300 dark:border-stone-700 font-sans font-semibold shrink-0">
             <button
@@ -614,7 +650,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-3 pb-8 sm:pt-5 sm:pb-10"
       >
-        <div className="max-w-2xl mx-auto">
+        <div className={lyricsLang === 'side-by-side' ? "max-w-5xl mx-auto" : "max-w-2xl mx-auto"}>
           {/* Hymn Header Block */}
           <div className="text-center pb-4 border-b border-stone-200/60 dark:border-stone-800 mb-4 sm:mb-5">
             {/* Hymn Number */}
@@ -637,10 +673,12 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
               {hymn.title}
             </h1>
 
-            {/* Writer */}
-            <p className={`mt-1.5 text-xs sm:text-sm font-medium ${themeStyles.metaText}`}>
-              <span className="font-semibold text-amber-900 dark:text-amber-400">Writer:</span> {hymn.writer}
-            </p>
+            {/* English Title */}
+            {(hymn.englishTune || hymn.writer) && (
+              <p className={`mt-1.5 text-xs sm:text-sm font-medium italic ${themeStyles.metaText}`}>
+                {hymn.englishTune || hymn.writer}
+              </p>
+            )}
 
             {/* Unboxed Metadata Strip (Zero-Pill Discipline) */}
             <div className="flex items-center justify-center flex-wrap gap-x-2 gap-y-0.5 text-xs font-sans text-stone-500 dark:text-stone-400 mt-2">
@@ -652,85 +690,313 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
               <span aria-hidden="true" className="text-stone-300 dark:text-stone-700">·</span>
               <span className="italic">{hymn.scripture}</span>
             </div>
+
+            {/* Language Switcher when English lyrics are provided */}
+            {hymn.englishVerses && hymn.englishVerses.length > 0 && (
+              <div className="inline-flex items-center p-1 rounded-xl bg-stone-200/60 dark:bg-stone-800/80 mt-3.5 text-xs font-semibold gap-1">
+                <button
+                  type="button"
+                  onClick={() => setLyricsLang('side-by-side')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    lyricsLang === 'side-by-side'
+                      ? 'bg-amber-900 text-white shadow-xs font-bold'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                  }`}
+                  title="Side-by-side dual language (Bemba on left, English on right)"
+                >
+                  Side-by-Side (Dual)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLyricsLang('bemba')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    lyricsLang === 'bemba'
+                      ? 'bg-amber-900 text-white shadow-xs font-bold'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                  }`}
+                >
+                  Cibemba
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLyricsLang('english')}
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    lyricsLang === 'english'
+                      ? 'bg-amber-900 text-white shadow-xs font-bold'
+                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                  }`}
+                >
+                  English
+                </button>
+              </div>
+            )}
+
+            {/* Side-by-side Column Header indicator */}
+            {lyricsLang === 'side-by-side' && (
+              <div className="hidden md:grid grid-cols-2 gap-8 text-left mt-4 pt-3 border-t border-stone-200/50 dark:border-stone-800/70">
+                <div className="pl-11">
+                  <span className="text-[11px] font-sans uppercase font-bold tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-1.5">
+                    <span>Cibemba (Left)</span>
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] font-sans uppercase font-bold tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-1.5">
+                    <span>English (Right)</span>
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Verses and Chorus */}
-          <div className="space-y-4 sm:space-y-5">
-            {hymn.verses.map((verseLines, verseIndex) => (
-              <React.Fragment key={`verse-${verseIndex}`}>
-                {/* Regular Verse */}
-                <div className="flex items-start gap-3 sm:gap-4">
-                  {/* Verse Number Stamp */}
-                  <div
-                    className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all ${themeStyles.verseNum}`}
-                    style={{
-                      width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
-                      height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
-                      fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
-                      fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
-                    }}
-                  >
-                    {verseIndex + 1}
-                  </div>
+          {/* Verses and Chorus Rendering */}
+          {(() => {
+            if (lyricsLang === 'side-by-side' && hymn.englishVerses && hymn.englishVerses.length > 0) {
+              const maxVerses = Math.max(hymn.verses.length, hymn.englishVerses.length);
 
-                  {/* Verse Lyrics */}
-                  <div
-                    className="flex-1 pt-0.5 transition-all"
-                    style={{
-                      fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
-                      lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
-                      fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
-                    }}
-                  >
-                    {verseLines.map((line, lineIndex) => (
-                      <p
-                        key={lineIndex}
-                        className="text-stone-900 dark:text-stone-100 transition-all break-words"
+              return (
+                <div className="space-y-4 sm:space-y-6">
+                  {Array.from({ length: maxVerses }).map((_, verseIndex) => {
+                    const bembaLines = hymn.verses[verseIndex] || [];
+                    const engLines = hymn.englishVerses ? hymn.englishVerses[verseIndex] || [] : [];
+
+                    return (
+                      <React.Fragment key={`dual-verse-${verseIndex}`}>
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          {/* Verse Number Stamp */}
+                          <div
+                            className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all ${themeStyles.verseNum}`}
+                            style={{
+                              width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                              height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                              fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
+                              fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                            }}
+                          >
+                            {verseIndex + 1}
+                          </div>
+
+                          {/* Dual Columns: Bemba on Left, English on Right */}
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 pt-0.5">
+                            {/* Left Column: Bemba */}
+                            <div
+                              style={{
+                                fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
+                                lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                              }}
+                            >
+                              <div className="md:hidden text-[10px] font-sans uppercase font-bold tracking-wider text-amber-900/80 dark:text-amber-400/80 mb-1">
+                                Cibemba
+                              </div>
+                              {bembaLines.map((line, lineIndex) => (
+                                <p
+                                  key={`b-${lineIndex}`}
+                                  className="text-stone-900 dark:text-stone-100 transition-all break-words"
+                                  style={{
+                                    fontWeight: isBoldText ? 700 : 'inherit',
+                                    lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                    marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                                  }}
+                                >
+                                  {line}
+                                </p>
+                              ))}
+                            </div>
+
+                            {/* Right Column: English */}
+                            <div
+                              style={{
+                                fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
+                                lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                              }}
+                              className="border-t border-stone-200/50 dark:border-stone-800/60 pt-2.5 md:pt-0 md:border-t-0"
+                            >
+                              <div className="md:hidden text-[10px] font-sans uppercase font-bold tracking-wider text-amber-800 dark:text-amber-400 mb-1">
+                                English
+                              </div>
+                              {engLines.map((line, lineIndex) => (
+                                <p
+                                  key={`e-${lineIndex}`}
+                                  className="text-stone-800 dark:text-stone-200 transition-all break-words"
+                                  style={{
+                                    fontWeight: isBoldText ? 700 : 'inherit',
+                                    lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                    marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                                  }}
+                                >
+                                  {line}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Chorus after 1st verse */}
+                        {(hymn.chorus || hymn.englishChorus) && verseIndex === 0 && (
+                          <div className={`my-3 sm:my-5 p-3.5 sm:p-5 rounded-xl ${themeStyles.chorusBg}`}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                              {/* Left: Bemba Chibwekesho */}
+                              <div>
+                                <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-400">
+                                  <span>{hymn.chorusLabel || 'Chibwekesho'}</span>
+                                </div>
+                                {hymn.chorus ? (
+                                  <div
+                                    className="italic transition-all"
+                                    style={{
+                                      fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
+                                      lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                      fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                                    }}
+                                  >
+                                    {hymn.chorus.map((line, chorusLineIndex) => (
+                                      <p
+                                        key={`b-c-${chorusLineIndex}`}
+                                        className="transition-all break-words"
+                                        style={{
+                                          fontWeight: isBoldText ? 700 : 500,
+                                          lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                          marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                                        }}
+                                      >
+                                        {line}
+                                      </p>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-stone-400 italic">—</span>
+                                )}
+                              </div>
+
+                              {/* Right: English Chorus */}
+                              <div className="border-t border-stone-200/50 dark:border-stone-800/60 pt-3 md:pt-0 md:border-t-0">
+                                <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-400">
+                                  <span>Chorus (English)</span>
+                                </div>
+                                {hymn.englishChorus ? (
+                                  <div
+                                    className="italic transition-all"
+                                    style={{
+                                      fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
+                                      lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                      fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                                    }}
+                                  >
+                                    {hymn.englishChorus.map((line, chorusLineIndex) => (
+                                      <p
+                                        key={`e-c-${chorusLineIndex}`}
+                                        className="transition-all break-words"
+                                        style={{
+                                          fontWeight: isBoldText ? 700 : 500,
+                                          lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                          marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                                        }}
+                                      >
+                                        {line}
+                                      </p>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-stone-400 italic">—</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            // Single column layout (either Cibemba or English only)
+            const activeVerses = lyricsLang === 'english' && hymn.englishVerses ? hymn.englishVerses : hymn.verses;
+            const activeChorus = lyricsLang === 'english' ? (hymn.englishChorus || null) : hymn.chorus;
+            const activeChorusLabel = lyricsLang === 'english' ? 'Chorus' : (hymn.chorusLabel || 'Chibwekesho');
+
+            return (
+              <div className="space-y-4 sm:space-y-5">
+                {activeVerses.map((verseLines, verseIndex) => (
+                  <React.Fragment key={`verse-${verseIndex}`}>
+                    {/* Regular Verse */}
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      {/* Verse Number Stamp */}
+                      <div
+                        className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all ${themeStyles.verseNum}`}
                         style={{
-                          lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
-                          marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                          width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                          height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                          fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
+                          fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
                         }}
                       >
-                        {line}
-                      </p>
-                    ))}
-                  </div>
-                </div>
+                        {verseIndex + 1}
+                      </div>
 
-                {/* Chorus rendered after the 1st verse (traditional hymnal arrangement) */}
-                {hymn.chorus && verseIndex === 0 && (
-                  <div
-                    className={`my-3 sm:my-4 p-3.5 sm:p-4 rounded-xl ${themeStyles.chorusBg}`}
-                  >
-                    <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-400">
-                      <span>{hymn.chorusLabel || 'Icililishi (Chorus)'}</span>
+                      {/* Verse Lyrics */}
+                      <div
+                        className="flex-1 pt-0.5 transition-all"
+                        style={{
+                          fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
+                          lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                          fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                        }}
+                      >
+                        {verseLines.map((line, lineIndex) => (
+                          <p
+                            key={lineIndex}
+                            className="text-stone-900 dark:text-stone-100 transition-all break-words"
+                            style={{
+                              fontWeight: isBoldText ? 700 : 'inherit',
+                              lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                              marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                            }}
+                          >
+                            {line}
+                          </p>
+                        ))}
+                      </div>
                     </div>
-                    <div
-                      className="italic transition-all"
-                      style={{
-                        fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
-                        lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
-                        fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
-                      }}
-                    >
-                      {hymn.chorus.map((line, chorusLineIndex) => (
-                        <p
-                          key={chorusLineIndex}
-                          className="font-medium transition-all break-words"
+
+                    {/* Chorus rendered after the 1st verse (traditional hymnal arrangement) */}
+                    {activeChorus && verseIndex === 0 && (
+                      <div
+                        className={`my-3 sm:my-4 p-3.5 sm:p-4 rounded-xl ${themeStyles.chorusBg}`}
+                      >
+                        <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-400">
+                          <span>{activeChorusLabel}</span>
+                        </div>
+                        <div
+                          className="italic transition-all"
                           style={{
+                            fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
                             lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
-                            marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                            fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
                           }}
                         >
-                          {line}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+                          {activeChorus.map((line, chorusLineIndex) => (
+                            <p
+                              key={chorusLineIndex}
+                              className="transition-all break-words"
+                              style={{
+                                fontWeight: isBoldText ? 700 : 500,
+                                lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
+                                marginBottom: `${(TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier - 1) * 0.45}rem`,
+                              }}
+                            >
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            );
+          })()}
 
         </div>
       </div>

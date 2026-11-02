@@ -223,6 +223,67 @@ class HymnalIndexedDB {
     }
   }
 
+  /**
+   * Returns the count of hymns stored in IndexedDB.
+   */
+  async getHymnCount(): Promise<number> {
+    try {
+      const db = await this.openDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction('hymns', 'readonly');
+        const store = tx.objectStore('hymns');
+        const req = store.count();
+        req.onsuccess = () => resolve(req.result || 0);
+        req.onerror = () => resolve(SAMPLE_HYMNS.length);
+      });
+    } catch {
+      return SAMPLE_HYMNS.length;
+    }
+  }
+
+  /**
+   * Safely deletes a hymn from IndexedDB by ID.
+   */
+  async deleteHymn(hymnId: string): Promise<boolean> {
+    if (!hymnId || typeof hymnId !== 'string') return false;
+    try {
+      const db = await this.openDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction('hymns', 'readwrite');
+        const store = tx.objectStore('hymns');
+        store.delete(hymnId);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Fetches static hymns catalog (/data/hymns.json) if available
+   * and synchronizes new/updated hymns into IndexedDB.
+   */
+  async fetchAndSyncStaticHymns(): Promise<{ importedCount: number; totalHymns: number }> {
+    if (typeof window === 'undefined') return { importedCount: 0, totalHymns: 0 };
+    try {
+      const res = await fetch('/data/hymns.json');
+      if (!res.ok) {
+        const all = await this.getAllHymns();
+        return { importedCount: 0, totalHymns: all.length };
+      }
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return await this.importHymns(data);
+      }
+      const all = await this.getAllHymns();
+      return { importedCount: 0, totalHymns: all.length };
+    } catch {
+      const all = await this.getAllHymns();
+      return { importedCount: 0, totalHymns: all.length };
+    }
+  }
+
   // --- FAVORITES ---
   async getFavoriteIds(): Promise<string[]> {
     try {
