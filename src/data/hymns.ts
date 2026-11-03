@@ -1446,39 +1446,1561 @@ export const SAMPLE_HYMNS: Hymn[] = [
     ]
   },
   {
-    id: 'hymn-33',
-    number: 33,
-    title: 'Kristu Aleisa na Kabili',
-    writer: 'Wayne Hooper',
-    englishTune: 'Sample Tune: We Have This Hope',
-    category: 'second-coming-and-heaven',
-    categoryBemba: 'Ubwishilo bwa kwa Kristu',
-    key: 'Bb Major',
-    timeSignature: '4/4',
-    scripture: 'Tito 2:13 · Ukusokolola 1:7',
-    isSample: true,
-    melodicPreview: [70, 72, 74, 75, 77, 75, 74, 72, 70],
+    id: 'hymn-21',
+    number: 21,
+    title: 'Naisa Kulupanda',
+    writer: 'I Am Coming to the Cross',
+    englishTune: 'I Am Coming to the Cross',
+    category: 'consecration',
+    categoryBemba: 'Ukuipeela',
+    key: 'G Major',
+    timeSignature: '3/4',
+    scripture: 'Mateo 11:28 · Abena Galatia 6:14',
+    isSample: false,
+    melodicPreview: [71, 71, 71, 69, 67, 69, 71, 72, 71, 69],
     verses: [
       [
-        'Tukwete ili isubilo ililebengeshima,',
-        'Ilyo Kristu Shikulu akabwela pe sonde;',
-        'Amakumbi yakayasuka, inyimbo shikaumfwika,',
-        'Bonse abafwa muli Wene bakabuuka.'
+        'Naisa ku Lupanda, ndi mupina nemfopu;',
+        'Fyonse fyandi ifyafye, Ndefwaya mpusushiwe.'
       ],
       [
-        'Tulepemba ubushiku bwa lupulumuko,',
-        'Apo ukufwa takwakabepo na kabili;',
-        'Yesu akasangulula icalo conse cibe cipya,',
-        'Bonse abamubombela bakekala nankwe.'
+        'Mutima wandi nomba, Ndefwaya kumupele;',
+        'Nomba Yesu anjeba, Ndefwaya mpusushiwe.'
+      ],
+      [
+        'Fyonse fye ndemupela, Ifibusa ne fyuma,',
+        'Mubili no mutima, fyenu cine pe na pe.'
+      ],
+      [
+        'Ndesumina malayo Kusambwa mumulopa;',
+        'Tekuti njilumbanye, Natanikwe na Yesu'
+      ],
+      [
+        'Yesu aisa nomba Aingila mum\'tima,',
+        'Nomba ndebuta tutu, Lulumbi kuli Yesu'
       ]
     ],
     chorus: [
-      'Aleisa! Aleisa! Mfumu ya shamfumu!',
-      'Mwe bana ba kwa Lesa, sungeni isubilo;',
-      'Ndekana na bubi, palameni kuli Kristu,',
-      'Pantu ubwishilo bwakwe buli mupepi!'
+      'Ndemusumina mweka, Mwana Lesa wapalwa;',
+      'Ku Lupanda mfukama, Untule Yesu nomba,',
+      '(Ibeshi lyakupelekesha) Yesu antula ine.'
     ],
-    chorusLabel: 'Icililishi (Chorus - Sample)'
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'I am coming to the cross;',
+        'I am poor, and weak, and blind;',
+        'I am counting all but dross,',
+        'I shall full salvation find.'
+      ],
+      [
+        'Long my heart has sighed for Thee,',
+        'Long has evil reigned within;',
+        'Jesus sweetly speaks to me,',
+        '“I will cleanse you from all sin.”'
+      ],
+      [
+        'Here I give my all to Thee,',
+        'Friends, and time, and earthly store;',
+        'Soul and body Thine to be,',
+        'Wholly Thine forevermore.'
+      ],
+      [
+        'In the promises I trust,',
+        'Now I feel the blood applied;',
+        'I am prostrate in the dust,',
+        'I with Christ am crucified.'
+      ],
+      [
+        'Jesus comes! He fills my soul!',
+        'Perfected in Him I am;',
+        'I am every whit made whole:',
+        'Glory, glory to the Lamb!'
+      ]
+    ],
+    englishChorus: [
+      'I am trusting, Lord, in Thee,',
+      'Blessed Lamb of Calvary;',
+      'Humbly at Thy cross I bow,',
+      'Save me, Jesus, save me now.',
+      '(Final stanza: Jesus saves me, saves me now.)'
+    ]
+  },
+  {
+    id: 'hymn-22',
+    number: 22,
+    title: 'Mfumu Naumfwa Mapalo',
+    writer: 'Lord, I Hear',
+    englishTune: 'Lord, I Hear',
+    category: 'prayer',
+    categoryBemba: 'Ipepo',
+    key: 'Eb Major',
+    timeSignature: '6/8',
+    scripture: 'Esekiele 34:26 · Amalumbo 85:6',
+    isSample: false,
+    melodicPreview: [63, 67, 70, 70, 72, 70, 68, 67, 65, 63],
+    verses: [
+      [
+        'Mfumu naumfwa mapalo,',
+        'Mwapela bantu benu;',
+        'Ayaba kubakosesha, Paleni ine nomba.'
+      ],
+      [
+        'Wincila ine Katula nangu ine ndimubi;',
+        'Imwe Lesa mukalamba mumpele luse lwenu'
+      ],
+      [
+        'Mpulumushi nacitile shamulengo bulanda;',
+        'Fya calo fyambifya ine, Mumbelele kuli ifi'
+      ],
+      [
+        'Mwe Mupashi mwincilila, Nangu ine nanaka:',
+        'Munjebe luse lwa Yesu ukumpela mutende'
+      ]
+    ],
+    chorus: [
+      'Paleni na ine, Paleni ine nomba.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'Lord, I hear of showers of blessing',
+        'Thou art scatt’ring full and free;',
+        'Showers the thirsty land refreshing;',
+        'Let some drops now fall on me.'
+      ],
+      [
+        'Pass me not, O gracious Father,',
+        'Sinful though my heart may be;',
+        'Thou mightst leave me, but the rather',
+        'Let Thy mercy light on me.'
+      ],
+      [
+        'Pass me not, O tender Savior,',
+        'Let me love and cling to Thee;',
+        'I am longing for Thy favor;',
+        'Whilst Thou’rt calling, O call me.'
+      ],
+      [
+        'Pass me not, O mighty Spirit!',
+        'Thou canst make the blind to see;',
+        'Witnesser of Jesus’ merit,',
+        'Speak the word of power to me.'
+      ]
+    ],
+    englishChorus: [
+      'Even me, even me,',
+      'Let some drops now fall on me.'
+    ]
+  },
+  {
+    id: 'hymn-23',
+    number: 23,
+    title: 'Mwikale na Ine',
+    writer: 'Hover O’er Me Holy Spirit',
+    englishTune: 'Hover O’er Me Holy Spirit',
+    category: 'holy-spirit',
+    categoryBemba: 'Umupashi wa Mushilo',
+    key: 'F Major',
+    timeSignature: '6/8',
+    scripture: 'Abena Efese 5:18 · Luka 11:13',
+    isSample: false,
+    melodicPreview: [65, 69, 72, 72, 74, 72, 69, 67, 65, 69, 67],
+    verses: [
+      [
+        'Mwikale na ine nomba, Mupashi Wamushilo;',
+        'Mwikale muli ine pe, Mwise mube na ine.'
+      ],
+      [
+        'Mwaishiba ukumpala, Nangu ine nanaka;',
+        'Ine ndemukabila pe, Mwise mube na ine.'
+      ],
+      [
+        'Ine ndi muntu wanaka, Ndemulomba uluse;',
+        'Pela kuli ine nomba, Amaka yakutemwa.'
+      ],
+      [
+        'Munsamba nokupususha, Mutima wabutisha;',
+        'Wansekesha ine nomba, Mwise mube na ine.'
+      ]
+    ],
+    chorus: [
+      'Mwikale, mwikale, Yesu mube na ine;',
+      'Mwikale muli ine pe, mwise mube na ine'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'Hover o’er me, Holy Spirit,',
+        'Bathe my trembling heart and brow;',
+        'Fill me with Thy hallowed presence,',
+        'Come, O come and fill me now.'
+      ],
+      [
+        'Thou canst fill me, gracious Spirit,',
+        'Though I cannot tell Thee how;',
+        'But I need Thee, greatly need Thee,',
+        'Come, O come and fill me now.'
+      ],
+      [
+        'I am weakness, full of weakness;',
+        'At Thy sacred feet I bow;',
+        'Blest, divine, eternal Spirit,',
+        'Fill with love, and fill me now.'
+      ],
+      [
+        'Cleanse and comfort, bless and save me,',
+        'Bathe, O bathe my heart and brow;',
+        'Thou art comforting and saving,',
+        'Thou art sweetly filling now.'
+      ]
+    ],
+    englishChorus: [
+      'Fill me now, fill me now,',
+      'Jesus, come and fill me now;',
+      'Fill me with Thy hallowed presence,',
+      'Come, O come and fill me now.'
+    ]
+  },
+  {
+    id: 'hymn-24',
+    number: 24,
+    title: 'Ndemukabila Pe',
+    writer: 'I Need Thee Every Hour',
+    englishTune: 'I Need Thee Every Hour',
+    category: 'prayer',
+    categoryBemba: 'Ipepo',
+    key: 'Ab Major',
+    timeSignature: '3/4',
+    scripture: 'Yohane 15:5 · Ahebere 4:16',
+    isSample: false,
+    melodicPreview: [68, 70, 72, 75, 73, 72, 70, 68, 70, 72],
+    verses: [
+      [
+        'Ndemukabila pe. Mfumu ya luse;',
+        'Tapali upela mutende nga Imwe.'
+      ],
+      [
+        'Ndemukabila pe, Kaleni Mupepi,',
+        'Satana \'kafilwa nga muli mupepi.'
+      ],
+      [
+        'Ndemukabila pe. Bulanda ne nseko;',
+        'Nangu tamwikale, Mweo wandi wafwa'
+      ],
+      [
+        'Ndemukabila pe. Mumfundishe lelo:',
+        'Ubufwayo bwenu, Muwamye mutima.'
+      ],
+      [
+        'Ndemukabila pe, Lesa wamushilo;',
+        'Muncite wacine. Mwe mfumu yandi'
+      ]
+    ],
+    chorus: [
+      'Ndemukabila Mfumu, nshita shonse kuno;',
+      'Mumpale ine Yesu Naisa nomba.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'I need Thee every hour,',
+        'Most gracious Lord;',
+        'No tender voice like Thine',
+        'Can peace afford.'
+      ],
+      [
+        'I need Thee every hour,',
+        'Stay Thou nearby;',
+        'Temptations lose their power',
+        'When Thou art nigh.'
+      ],
+      [
+        'I need Thee every hour,',
+        'In joy or pain;',
+        'Come quickly and abide,',
+        'Or life is vain.'
+      ],
+      [
+        'I need Thee every hour,',
+        'Teach me Thy will;',
+        'And Thy rich promises',
+        'In me fulfill.'
+      ],
+      [
+        'I need Thee every hour,',
+        'Most Holy One;',
+        'O make me Thine indeed,',
+        'Thou blessed Son!'
+      ]
+    ],
+    englishChorus: [
+      'I need Thee, O I need Thee;',
+      'Every hour I need Thee;',
+      'O bless me now, my Savior,',
+      'I come to Thee!'
+    ]
+  },
+  {
+    id: 'hymn-25',
+    number: 25,
+    title: 'Fyonse Nacimbila Yesu',
+    writer: 'All to Jesus I Surrender',
+    englishTune: 'All to Jesus I Surrender',
+    category: 'consecration',
+    categoryBemba: 'Ukuipeela',
+    key: 'D Major',
+    timeSignature: '4/4',
+    scripture: 'Luka 9:23 · Abena Roma 12:1 · Abena Filipi 3:7-8',
+    isSample: false,
+    melodicPreview: [62, 66, 69, 69, 71, 69, 66, 62, 64, 66],
+    verses: [
+      [
+        'Fyonse nacimbila Yesu Fyonse ndemupela fye;',
+        'Nkamutemwa nshiku shonse, No kwikala nankwe pe.'
+      ],
+      [
+        'Fyonse nacimbila Yesu,',
+        'Ndefukama ku nkasa:',
+        'Naposa fyonse fya calo, Mbula Yesu mbuleni.'
+      ],
+      [
+        'Fyonse nacimbila Yesu, Ncita mbe wamushilo;',
+        'Mupashi mube na ine, Ngumfwe kuti mbe wenu.'
+      ],
+      [
+        'Fyonse nacimbila Yesu Nomba ningumfwa Wene;',
+        'Luseko lwa bupususho! Mulumbanyeni bonse.'
+      ]
+    ],
+    chorus: [
+      'Fyonse nacimba, Fyonse nacimba,',
+      'Kuli Imwe Mupusushi, nacimba fyonse.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'All to Jesus I surrender,',
+        'All to Him I freely give;',
+        'I will ever love and trust Him,',
+        'In His presence daily live.'
+      ],
+      [
+        'All to Jesus I surrender,',
+        'Humbly at His feet I bow,',
+        'Worldly pleasures all forsaken;',
+        'Take me, Jesus, take me now.'
+      ],
+      [
+        'All to Jesus I surrender,',
+        'Make me, Savior, wholly Thine;',
+        'Let me feel the Holy Spirit,',
+        'Truly know that Thou art mine.'
+      ],
+      [
+        'All to Jesus I surrender,',
+        'Now I feel the sacred flame.',
+        'O the joy of full salvation!',
+        'Glory, glory, to His name!'
+      ]
+    ],
+    englishChorus: [
+      'I surrender all,',
+      'I surrender all,',
+      'All to Thee, my blessed Savior,',
+      'I surrender all.'
+    ]
+  },
+  {
+    id: 'hymn-26',
+    number: 26,
+    title: 'Nge Fintu Ndi',
+    writer: 'Just As I Am',
+    englishTune: 'Just As I Am',
+    category: 'invitation-and-repentance',
+    categoryBemba: 'Ubwilishi no Kulapila',
+    key: 'Eb Major',
+    timeSignature: '3/2',
+    scripture: 'Yohane 6:37 · 1 Yohane 1:7 · Ukusokolola 22:17',
+    isSample: false,
+    melodicPreview: [63, 67, 70, 70, 72, 70, 70, 68, 67],
+    verses: [
+      [
+        'Nge fintu ndi, ndi wafibi,',
+        'lelo M\'lopa wasumine,',
+        'Elyo mwanjita kuli Mwe.'
+      ],
+      [
+        'Nge fintu ndi, ndi impofu,',
+        'Naisa munsambe ine,',
+        'Munsambishe no mulopa,'
+      ],
+      [
+        'Nge fintu ndi, Nacushiwe',
+        'namatontonkanyo yabi,',
+        'Yakutwishika no mweso,'
+      ],
+      [
+        'Nge fintu ndi, ndimupina,',
+        'Ndefwaya ukuposhiwa;',
+        'Nkasanga fyonse kuli Mwe,'
+      ],
+      [
+        'Nge fintu ndi, mulepoka,',
+        'Mulemposha no kunsamba,',
+        'Pantu namucetekela'
+      ],
+      [
+        'Nge fintu ndi, ukutemwa',
+        'kula nkula kuli Imwe,',
+        'Nomba ndiwenu fye Mweka'
+      ]
+    ],
+    chorus: [
+      'Mwe Mwana Lesa, naisa.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'Just as I am, without one plea,',
+        'But that Thy blood was shed for me,',
+        'And that Thou bid’st me come to Thee,'
+      ],
+      [
+        'Just as I am, and waiting not',
+        'To rid my soul of one dark blot,',
+        'To Thee, whose blood can cleanse each spot,'
+      ],
+      [
+        'Just as I am, though tossed about',
+        'With many a conflict, many a doubt,',
+        'Fightings and fears within, without,'
+      ],
+      [
+        'Just as I am, poor, wretched, blind;',
+        'Sight, riches, healing of the mind,',
+        'Yea, all I need, in Thee to find,'
+      ],
+      [
+        'Just as I am, Thou wilt receive,',
+        'Wilt welcome, pardon, cleanse, relieve;',
+        'Because Thy promise I believe,'
+      ],
+      [
+        'Just as I am, Thy love unknown',
+        'Hath broken every barrier down;',
+        'Now to be Thine, yea, Thine alone,'
+      ]
+    ],
+    englishChorus: [
+      'O Lamb of God, I come! I come!'
+    ]
+  },
+  {
+    id: 'hymn-27',
+    number: 27,
+    title: 'Twatasha Mwe Lesa',
+    writer: 'We Praise Thee O God',
+    englishTune: 'We Praise Thee O God',
+    category: 'praise-and-adoration',
+    categoryBemba: 'Ukulumbanya no Kutasha',
+    key: 'F Major',
+    timeSignature: '3/4',
+    scripture: 'Amalumbo 85:6 · Habakuki 3:2',
+    isSample: false,
+    melodicPreview: [65, 65, 69, 72, 72, 72, 74, 72, 69, 65],
+    verses: [
+      [
+        'Twatasha mwe Le-sa ku Mwana wenu,',
+        'Ye-su afwile ukutula ifwe.'
+      ],
+      [
+        'Twatasha Lesa ku Mupashi wenu,',
+        'A-tulangile Mupusushi wesu.'
+      ],
+      [
+        'Lulumbi lonse kwa Lesa mukulu,',
+        'A-tushitile nomba tuli bakwe.'
+      ],
+      [
+        'Lulumbi lonse ku Mwana wa Mpanga.',
+        'A-sendele fya bipa fyesu fyonse.'
+      ],
+      [
+        'Mutwimye nokwi-sula fye kutemwa,',
+        'Ko-sesha mitima yesu kuli iMwe.'
+      ]
+    ],
+    chorus: [
+      'Aleluya! Aleluya! Aleluya! Ameni;',
+      'Aleluya! Aleluya! Mutwimye limbi.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'We praise Thee, O God! for the Son of Thy love,',
+        'For Jesus who died, and is now gone above.'
+      ],
+      [
+        'We praise Thee, O God! for Thy Spirit of light,',
+        'Who has shown us our Savior, and scattered our night.'
+      ],
+      [
+        'All glory and praise to the God of all grace,',
+        'Who has bought us, and sought us, and guided our ways.'
+      ],
+      [
+        'All glory and praise to the Lamb that was slain,',
+        'Who has borne all our sins, and has cleansed every stain.'
+      ],
+      [
+        'Revive us again; fill each heart with Thy love;',
+        'May each soul be rekindled with fire from above.'
+      ]
+    ],
+    englishChorus: [
+      'Hallelujah! Thine the glory, Hallelujah! Amen;',
+      'Hallelujah! Thine the glory, Revive us again.'
+    ]
+  },
+  {
+    id: 'hymn-28',
+    number: 28,
+    title: 'Buleni Inshita Kukonka Yesu',
+    writer: 'Take Time to Be Holy',
+    englishTune: 'Take Time to Be Holy',
+    category: 'consecration',
+    categoryBemba: 'Ukuipeela',
+    key: 'F Major',
+    timeSignature: '6/8',
+    scripture: '1 Petro 1:15-16 · Amalumbo 46:10',
+    isSample: false,
+    melodicPreview: [65, 69, 72, 72, 74, 72, 69, 65, 67, 69],
+    verses: [
+      [
+        'Buleni inshita kukonka Yesu:',
+        'Mube nankwe pe pe, temwa mashiwi;',
+        'Mube ne cibusa ku bana bakwe;',
+        'Mwilaba mu fyonse e kumupala'
+      ],
+      [
+        'Buleni inshita kukonka Yesu;',
+        '\'Kaleni mu nkama na Yesu Mfumu;',
+        'Kumona Katula tulepalama;',
+        'Ku fintu mwacita akamoneka,'
+      ],
+      [
+        'Buleni inshita kukonka Yesu;',
+        'Mwilaya pantanshi ya ntungulushi;',
+        'Mu kwanga ne nsoni konkeni Mfumu;',
+        'Moneni Katula, Cetekeleni.'
+      ],
+      [
+        'Buleni inshita kukonka Yesu;',
+        'Mweo obe onse pela ku Mfumu;',
+        'Mupashi wa Lesa katungulula;',
+        'Nokumuwamisha Kwikala nankwe,'
+      ]
+    ],
+    chorus: null,
+    englishVerses: [
+      [
+        'Take time to be holy, speak oft with thy Lord;',
+        'Abide in Him always, and feed on His Word.',
+        'Make friends of God’s children, help those who are weak,',
+        'Forgetting in nothing His blessing to seek.'
+      ],
+      [
+        'Take time to be holy, the world rushes on;',
+        'Spend much time in secret, with Jesus alone.',
+        'By looking to Jesus, like Him thou shalt be;',
+        'Thy friends in thy conduct His likeness shall see.'
+      ],
+      [
+        'Take time to be holy, let Him be thy Guide;',
+        'And run not before Him, whatever betide.',
+        'In joy or in sorrow, still follow the Lord,',
+        'And, looking to Jesus, still trust in His Word.'
+      ],
+      [
+        'Take time to be holy, be calm in thy soul,',
+        'Each thought and each motive beneath His control.',
+        'Thus led by His Spirit to fountains of love,',
+        'Thou soon shalt be fitted for service above.'
+      ]
+    ]
+  },
+  {
+    id: 'hymn-29',
+    number: 29,
+    title: 'Ube na Ine',
+    writer: 'Abide With Me',
+    englishTune: 'Abide With Me',
+    category: 'prayer',
+    categoryBemba: 'Ipepo',
+    key: 'Eb Major',
+    timeSignature: '4/4',
+    scripture: 'Luka 24:29 · 1 Abena Korinti 15:55',
+    isSample: false,
+    melodicPreview: [67, 67, 65, 63, 70, 72, 70, 68, 67],
+    verses: [
+      [
+        'Ube naine kasuba kawa,',
+        'Mfimfi yafula ube naine!',
+        'No wakungafwa wine nshikwete,',
+        'We kafwa wandi ube na ine!'
+      ],
+      [
+        'Inshiku shandi shilepwa bwangu',
+        'Fintu fyamucalo fili fyafye,',
+        'Fyonse fili fyakupitilila,',
+        'We ushaluka ube na ine!'
+      ],
+      [
+        'Ndekufwaya inshiku shonse pe',
+        'Uluse lobe lwaansha fyonse,',
+        'Ube intungulushi yandi,',
+        'Muli fyonsefye ube na ine!'
+      ],
+      [
+        'Nshatine kuti ube na ine,',
+        'Amacusho tekuti yancushe,',
+        'Wamfwa ukwansha kobe kulikwi?',
+        'Nkansha ne pantu uti na ine!'
+      ]
+    ],
+    chorus: null,
+    englishVerses: [
+      [
+        'Abide with me; fast falls the eventide;',
+        'The darkness deepens; Lord, with me abide!',
+        'When other helpers fail and comforts flee,',
+        'Help of the helpless, O abide with me!'
+      ],
+      [
+        'Swift to its close ebbs out life’s little day;',
+        'Earth’s joys grow dim; its glories pass away;',
+        'Change and decay in all around I see;',
+        'O Thou who changest not, abide with me!'
+      ],
+      [
+        'I need Thy presence every passing hour;',
+        'What but Thy grace can foil the tempter’s power?',
+        'Who, like Thyself, my guide and stay can be?',
+        'Through cloud and sunshine, Lord, abide with me!'
+      ],
+      [
+        'I fear no foe, with Thee at hand to bless;',
+        'Ills have no weight, and tears no bitterness;',
+        'Where is death’s sting? where, grave, thy victory?',
+        'I triumph still, if Thou abide with me!'
+      ]
+    ]
+  },
+  {
+    id: 'hymn-30',
+    number: 30,
+    title: 'Kasuba Kawa Nomba',
+    writer: 'Day Is Dying in the West',
+    englishTune: 'Day Is Dying in the West',
+    category: 'evening-and-close-of-day',
+    categoryBemba: 'Icungulo',
+    key: 'Ab Major',
+    timeSignature: '6/8',
+    scripture: 'Esaya 6:3 · Ukusokolola 4:8 · Amalumbo 19:1-2',
+    isSample: false,
+    melodicPreview: [68, 60, 68, 68, 72, 70, 68, 70, 72, 68],
+    verses: [
+      [
+        'Kasuba kawa nomba, Twapelwa ukutusha,',
+        'Nomba toteni Lesa Ku mapalo twapelwa pa kasuba'
+      ],
+      [
+        'Lesa Mfumu ya mweo, Ifintu fyonse fyenu;',
+        'Mutupale \'fwe bonse, Lintu tulemupepa mube nefwe.'
+      ],
+      [
+        'Tata mutusunge fwe lintu mfimfi yaisa;',
+        'Tulemutasha lelo Ne mitima yacine, Lesa wesu.'
+      ],
+      [
+        'Lintu fyonse fikapwa, Milimo yonse yapwa,',
+        'Lesa wesu wa mulu Mutupele cifulo kuli imwe'
+      ]
+    ],
+    chorus: [
+      'Lesa Wamushilo mukalamba;',
+      'Bonse kuno no mulu',
+      'Bamutotela nomba Lesa Wesu.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'Day is dying in the west;',
+        'Heaven is touching earth with rest;',
+        'Wait and worship while the night',
+        'Sets the evening lamps alight',
+        'Through all the sky.'
+      ],
+      [
+        'Lord of life, beneath the dome',
+        'Of the universe, Thy home,',
+        'Gather us who seek Thy face',
+        'To the fold of Thy embrace,',
+        'For Thou art nigh.'
+      ],
+      [
+        'While the deepening shadows fall,',
+        'Heart of love, enfolding all,',
+        'Through the glory and the grace',
+        'Of the stars that veil Thy face,',
+        'Our hearts ascend.'
+      ],
+      [
+        'When at last the shadows flee,',
+        'And the eternal dawn we see,',
+        'Tender Savior, through the night',
+        'Lead us to the heavenly home',
+        'Where glory shines.'
+      ]
+    ],
+    englishChorus: [
+      'Holy, holy, holy, Lord God of hosts!',
+      'Heaven and earth are full of Thee,',
+      'Heaven and earth are praising Thee,',
+      'O Lord Most High!'
+    ]
+  },
+  {
+    id: 'hymn-31',
+    number: 31,
+    title: 'Mwe Katula Watemwikwa',
+    writer: 'Sun of My Soul',
+    englishTune: 'Sun of My Soul',
+    category: 'evening-and-close-of-day',
+    categoryBemba: 'Icungulo',
+    key: 'F Major',
+    timeSignature: '3/4',
+    scripture: 'Luka 24:29 · Amalumbo 84:11 · Ukusokolola 21:23',
+    isSample: false,
+    melodicPreview: [65, 65, 67, 69, 69, 67, 65, 72, 70, 69],
+    verses: [
+      [
+        'Mwe Katula wate-mwikwa',
+        'Ulubuto nga mu-lipo;',
+        'Mwileka fintu fya calo',
+        'Kufisha ku menso yesu.'
+      ],
+      [
+        'Lintu napo-na mu tulo',
+        'Mumpempule no-luse;',
+        'Mupele kutontonkanya',
+        'Kutemwa kwa Mupu-sushi.'
+      ],
+      [
+        'Mube na ine \'nshiku pe,',
+        'Kwabula Imwe nshi-kala;',
+        'Lintu bushiku bwaila',
+        'Mube na ine Ka-tula.'
+      ],
+      [
+        'Mumpale ine lucelo',
+        'Lintu nshate-ndeke ncito;',
+        'Nga lintu Yesu abwela',
+        'Nkekale nankwe ku mulu.'
+      ]
+    ],
+    chorus: null,
+    englishVerses: [
+      [
+        'Sun of my soul, Thou Savior dear,',
+        'It is not night if Thou be near;',
+        'O may no earthborn cloud arise',
+        'To hide Thee from Thy servant’s eyes.'
+      ],
+      [
+        'When the soft dews of kindly sleep',
+        'My weary eyelids gently steep,',
+        'Be my last thought, how sweet to rest',
+        'Forever on my Savior’s breast.'
+      ],
+      [
+        'Abide with me from morn till eve,',
+        'For without Thee I cannot live;',
+        'Abide with me when night is nigh,',
+        'For without Thee I dare not die.'
+      ],
+      [
+        'Come near and bless us when we wake,',
+        'Ere through the world our way we take,',
+        'Till in the ocean of Thy love',
+        'We lose ourselves in heaven above.'
+      ]
+    ]
+  },
+  {
+    id: 'hymn-32',
+    number: 32,
+    title: 'Mfumu e Cilibwe',
+    writer: 'The Lord’s Our Rock',
+    englishTune: 'The Lord’s Our Rock',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukushintilila',
+    key: 'F Major',
+    timeSignature: '4/4',
+    scripture: 'Amalumbo 94:22 · Amalumbo 61:2-3 · Esaya 32:2',
+    isSample: false,
+    melodicPreview: [65, 65, 65, 69, 72, 72, 72, 74, 72, 69],
+    verses: [
+      [
+        'Mfumu e cilibwe cesu, E linga lyesu pe na pe',
+        'Mu macusho tulekosa, E linga lyesu pe na pe'
+      ],
+      [
+        'Cintelelwe pa kasuba, E linga lyesu pe na pe,',
+        'Tatwabe no mwenso nomba, E linga lyesu pe na pe.'
+      ],
+      [
+        'Nga milamba yafulisha, Elinga lyesu pe na pe.',
+        'Lesa wesu atusunga, Elinga lyesu pe na pe.'
+      ],
+      [
+        'Mwe cilibwe catemwikwa, Elinga lyesu pe na pe,',
+        'Mube mupepi na ifwe, Elinga lyesu pe na pe.'
+      ]
+    ],
+    chorus: [
+      'Cilibwe-e cesu ca maka, cintelelwe muciswebebe,',
+      'Ntungulu-shi yesu yacine E linga lyesu pe na pe.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'The Lord’s our Rock, in Him we hide,',
+        'A shelter in the time of storm;',
+        'Secure whatever ill betide,',
+        'A shelter in the time of storm.'
+      ],
+      [
+        'A shade by day, defense by night,',
+        'A shelter in the time of storm;',
+        'No fears alarm, no foes affright,',
+        'A shelter in the time of storm.'
+      ],
+      [
+        'The raging storms may round us beat,',
+        'A shelter in the time of storm;',
+        'We’ll never leave our safe retreat,',
+        'A shelter in the time of storm.'
+      ],
+      [
+        'O Rock divine, O Refuge dear,',
+        'A shelter in the time of storm;',
+        'Be Thou our helper ever near,',
+        'A shelter in the time of storm.'
+      ]
+    ],
+    englishChorus: [
+      'Oh, Jesus is a rock in a weary land,',
+      'A weary land, a weary land;',
+      'Oh, Jesus is a rock in a weary land,',
+      'A shelter in the time of storm.'
+    ]
+  },
+  {
+    id: 'hymn-33',
+    number: 33,
+    title: 'Antungulula Konse Fye',
+    writer: 'He Leadeth Me',
+    englishTune: 'He Leadeth Me',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukushintilila',
+    key: 'D Major',
+    timeSignature: '4/4',
+    scripture: 'Amalumbo 23:2-3 · Ukusokolola 7:17',
+    isSample: false,
+    melodicPreview: [62, 66, 69, 69, 71, 69, 66, 69, 64],
+    verses: [
+      [
+        'Antungulula konse fye! Mashiwi yalenkosesha!',
+        'No ko konse kuntu ndeya, A cili alenondola.'
+      ],
+      [
+        'Nshita shimo mu bulanda, Nangu ndesekela bwino:',
+        'Mu buseko na macusho, Acili alenondola.'
+      ],
+      [
+        'Ndefwaya ukwikatisha, Nokushing\'wing\'wintikila;',
+        'Lelo nkekushiwa fyonse, Pantu wene anondola.'
+      ],
+      [
+        'Umulimo wandi wapwa, Na ine nayansha fyonse;',
+        'Nangu kufwa teti ntine, Pantu Lesa anondola.'
+      ]
+    ],
+    chorus: [
+      'Anondola, anondola! Anondola no kuboko;',
+      'Nkaba kakonka wawama Pantu anondola ine.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'He leadeth me: O blessed thought!',
+        'O words with heavenly comfort fraught!',
+        'Whate’er I do, where’er I be,',
+        'Still ’tis God’s hand that leadeth me.'
+      ],
+      [
+        'Sometimes ’mid scenes of deepest gloom,',
+        'Sometimes where Eden’s bowers bloom,',
+        'By waters still, o’er troubled sea,',
+        'Still ’tis His hand that leadeth me.'
+      ],
+      [
+        'Lord, I would clasp Thy hand in mine,',
+        'Nor ever murmur nor repine;',
+        'Content, whatever lot I see,',
+        'Since ’tis my God that leadeth me.'
+      ],
+      [
+        'And when my task on earth is done,',
+        'When, by Thy grace, the victory’s won,',
+        'E’en death’s cold wave I will not flee,',
+        'Since God through Jordan leadeth me.'
+      ]
+    ],
+    englishChorus: [
+      'He leadeth me, He leadeth me,',
+      'By His own hand He leadeth me;',
+      'His faithful follower I would be,',
+      'For by His hand He leadeth me.'
+    ]
+  },
+  {
+    id: 'hymn-34',
+    number: 34,
+    title: 'Lintu Mweo Wandi Waenda Bwino',
+    writer: 'When Peace Like a River',
+    englishTune: 'When Peace Like a River',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukushintilila',
+    key: 'C Major',
+    timeSignature: '4/4',
+    scripture: '2 Ishamfumu 4:26 · Amalumbo 46:1-3 · Esaya 66:12',
+    isSample: false,
+    melodicPreview: [60, 60, 59, 57, 59, 60, 64, 62, 60],
+    verses: [
+      [
+        'Lintu mweo wandi waenda bwino, Nangu malanda yafula;',
+        'Muli fyonse \'fi mwalinsambilisha ukuti, Cawama mutima.'
+      ],
+      [
+        'Nangu Ciwa alencusha kuno pe, Ubulayo bulengafwa,',
+        'Yesu aleshiba kunaka kwandi, Afwile kumpela amaka'
+      ],
+      [
+        'Nasekela nomba kwishiba ici, Ububi nangu bwafula;',
+        'Asendele nomba tebwandi iyo, Lulumbi lulumbi ku Mfumu.'
+      ],
+      [
+        'Mwe Katula wandi mwendeshe kwisa Lintu tukamona fyonse,',
+        'Penga likalila apo akesa, Cawama mutima wandi pe.'
+      ]
+    ],
+    chorus: [
+      'Cawama .... Mutima .... Cawama mutima wandi pe.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'When peace like a river attendeth my way,',
+        'When sorrows like sea billows roll;',
+        'Whatever my lot, Thou hast taught me to say,',
+        'It is well, it is well with my soul.'
+      ],
+      [
+        'Though Satan should buffet, though trials should come,',
+        'Let this blest assurance control,',
+        'That Christ has regarded my helpless estate,',
+        'And hath shed His own blood for my soul.'
+      ],
+      [
+        'My sin—oh, the bliss of this glorious thought!—',
+        'My sin, not in part, but the whole,',
+        'Is nailed to the cross, and I bear it no more,',
+        'Praise the Lord, praise the Lord, O my soul!'
+      ],
+      [
+        'And, Lord, haste the day when my faith shall be sight,',
+        'The clouds be rolled back as a scroll;',
+        'The trump shall resound, and the Lord shall descend,',
+        'Even so, it is well with my soul.'
+      ]
+    ],
+    englishChorus: [
+      'It is well (It is well) with my soul (with my soul),',
+      'It is well, it is well with my soul.'
+    ]
+  },
+  {
+    id: 'hymn-35',
+    number: 35,
+    title: 'E Bucibusa E Busekesha',
+    writer: 'What a Fellowship',
+    englishTune: 'What a Fellowship (Showalter)',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukushintilila',
+    key: 'Ab Major',
+    timeSignature: '4/4',
+    scripture: 'Amalango 33:27 · Amalumbo 46:1',
+    isSample: false,
+    melodicPreview: [68, 68, 70, 72, 72, 70, 68, 65, 68, 70, 72, 68],
+    verses: [
+      [
+        'E busibusa, e busekesha',
+        'Lintu Yesu aletusunga;',
+        'Umutende pe aletupela,',
+        'Lintu tulemusumina fye.'
+      ],
+      [
+        'Cawama nomba, ukukonka pe,',
+        'Lintu Yesu aletusunga,',
+        'Lubuto lwakwe munshila yesu,',
+        'Lintu tulemusumina fye.'
+      ],
+      [
+        'Tatwakatine, mwenso takuli,',
+        'Lintu Yesu aletusunga;',
+        'Atupela pe mutende wakwe,',
+        'Lintu tulemusumina fye.'
+      ]
+    ],
+    chorus: [
+      'Ta-tu-ti-na Pantu Yesu e Katula;',
+      'Ta-tu-ti-na Lintu Yesu aletusunga.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'What a fellowship, what a joy divine,',
+        'Leaning on the everlasting arms;',
+        'What a blessedness, what a peace is mine,',
+        'Leaning on the everlasting arms.'
+      ],
+      [
+        'O how sweet to walk in this pilgrim way,',
+        'Leaning on the everlasting arms;',
+        'O how bright the path grows from day to day,',
+        'Leaning on the everlasting arms.'
+      ],
+      [
+        'What have I to dread, what have I to fear,',
+        'Leaning on the everlasting arms?',
+        'I have blessed peace with my Lord so near,',
+        'Leaning on the everlasting arms.'
+      ]
+    ],
+    englishChorus: [
+      'Leaning, leaning, safe and secure from all alarms;',
+      'Leaning, leaning, leaning on the everlasting arms.'
+    ]
+  },
+  {
+    id: 'hymn-36',
+    number: 36,
+    title: 'Ndemumona Imwe',
+    writer: 'My Faith Looks Up to Thee',
+    englishTune: 'My Faith Looks Up to Thee (Olivet)',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukushintilila no Kutetekela',
+    key: 'Eb Major',
+    timeSignature: '4/4',
+    scripture: 'AbaHebere 12:2 · Amalumbo 25:1-2 · Yohane 1:29',
+    isSample: false,
+    melodicPreview: [63, 63, 63, 65, 67, 65, 63, 67, 68, 70, 67, 63],
+    verses: [
+      [
+        'Ndemumona Imwe, Muli pa Kalfali,',
+        'Mwana Lesa; Mumfwe shiwi lyandi.',
+        'Mufumye ifibi, Ndefwaya pe na pe.',
+        'Kuba wenu.'
+      ],
+      [
+        'Peleni cikuku, Mukosho \'mutima,',
+        'Ukubomba; Pantu mwamfwilile,',
+        'Ndefwaya kutemwa,',
+        'No kubomba \'lelo Ne nshiku pe.'
+      ],
+      [
+        'Lintu ndi mu calo, Yafula macusho,',
+        'Mulensunga; Mfifi \'be kasuba,',
+        'Mufumye bulanda,',
+        'Lelo ne nshiku pe, Ni \'ne wenu'
+      ]
+    ],
+    chorus: null,
+    englishVerses: [
+      [
+        'My faith looks up to Thee, Thou Lamb of Calvary,',
+        'Savior divine! Now hear me while I pray,',
+        'Take all my guilt away, O let me from this day',
+        'Be wholly Thine!'
+      ],
+      [
+        'May Thy rich grace impart Strength to my fainting heart,',
+        'My zeal inspire; As Thou hast died for me,',
+        'O may my love to Thee Pure, warm, and changeless be,',
+        'A living fire!'
+      ],
+      [
+        'While life’s dark maze I tread, And griefs around me spread,',
+        'Be Thou my Guide; Bid darkness turn to day,',
+        'Wipe sorrow’s tears away, Nor let me ever stray',
+        'From Thee aside.'
+      ]
+    ]
+  },
+  {
+    id: 'hymn-37',
+    number: 37,
+    title: 'Lesa Mfumu Yandi',
+    writer: 'Sarah F. Adams / Lowell Mason',
+    englishTune: 'Nearer, My God to Thee (Bethany)',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukushintilila no Kupalama',
+    key: 'G Major',
+    timeSignature: '6/4',
+    scripture: 'Ukutendeka 28:10-19 · Amalumbo 73:28 · Yakobo 4:8',
+    isSample: false,
+    melodicPreview: [71, 69, 67, 71, 69, 67, 64, 62],
+    verses: [
+      [
+        'Lesa Mfumu yandi kampalame,',
+        'Nangu kulupanda naninikwa;',
+        'Elyo, lwimbo lwandi nkamupalamina'
+      ],
+      [
+        'Nangu ngo mweni fye naililwa,',
+        'Bushiku bwafita, ine neka;',
+        'Lelo mufiloto nkamupalamina,'
+      ],
+      [
+        'Mu nshila ya cine ndefwaisha,',
+        'Fyonse wantumina ifya luse;',
+        'Bangeli bangafwa kumupalamina,'
+      ],
+      [
+        'Elyo, nashibuka, nkamutasha,',
+        'Nangu mubulanda nkamutota;',
+        'Elyo mu machusho nkamupalamina'
+      ],
+      [
+        'Elyo, Imfwa yapwa nkaya kwesu,',
+        'Munshila ku mulu nkemba cine;',
+        'Ulwimbo lwakale lwakupalamina,'
+      ]
+    ],
+    chorus: [
+      'Nkamupalamina Lesa wandi.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'Nearer, my God, to Thee, nearer to Thee!',
+        'E’en though it be a cross that raiseth me,',
+        'Still all my song shall be, nearer, my God, to Thee.'
+      ],
+      [
+        'Though like the wanderer, the sun gone down,',
+        'Darkness be over me, my rest a stone;',
+        'Yet in my dreams I’d be nearer, my God, to Thee.'
+      ],
+      [
+        'There let the way appear, steps unto heaven;',
+        'All that Thou sendest me, in mercy given;',
+        'Angels to beckon me nearer, my God, to Thee.'
+      ],
+      [
+        'Then, with my waking thoughts bright with Thy praise,',
+        'Out of my stony griefs Bethel I’ll raise;',
+        'So by my woes to be nearer, my God, to Thee.'
+      ],
+      [
+        'Or if on joyful wing cleaving the sky,',
+        'Sun, moon, and stars forgot, upward I fly,',
+        'Still all my song shall be, nearer, my God, to Thee.'
+      ]
+    ],
+    englishChorus: [
+      'Nearer, my God, to Thee, nearer to Thee!'
+    ]
+  },
+  {
+    id: 'hymn-38',
+    number: 38,
+    title: 'Mwe Bakwa Lesa',
+    writer: 'Christopher R. Blackall / William H. Doane',
+    englishTune: 'Firmly Stand for God (Stand on the Rock)',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukushipikisha no Kushimpa',
+    key: 'Eb Major',
+    timeSignature: '4/4',
+    scripture: '1 Abena Korinte 10:4 · Efese 6:10-13 · Amalumbo 18:2',
+    isSample: false,
+    melodicPreview: [63, 67, 70, 70, 70, 72, 70, 68, 67, 65, 63],
+    verses: [
+      [
+        'Mwe bakwa Lesa koseni nomba,',
+        'Nangu amachushyo yafulishya,',
+        'Ali libwe amupela maka,',
+        'Lintu Ciwa apalama.'
+      ],
+      [
+        'Koseni mu cine cakwa Lesa.',
+        'Koseni bucetekelo bwenu;',
+        'Ali Libwe amupelo bwansho,',
+        'Pali bubi pa calo.'
+      ],
+      [
+        'Konkeni cine akafwa imwe,',
+        'Nangu yalinda nshita itali;',
+        'Cine cikamupela mutende,',
+        'Mu macusho ya mweo.'
+      ]
+    ],
+    chorus: [
+      'Kaleni pa Libwe, kaleni pa Libwe,',
+      'Yesu Klistu e Libwe.',
+      '"Nga twansho bubi ci-ne tukekala,',
+      'Mubufumu bwa Katula.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'Firmly stand for God, in the world’s mad strife,',
+        'Tho’ the bleak winds roar, and the waves beat high;',
+        '’Tis the Rock alone giveth strength and life,',
+        'When the hosts of sin are nigh.'
+      ],
+      [
+        'Firmly stand for Right, with a motive pure,',
+        'With a true heart bold, and a faith e’er strong;',
+        '’Tis the Rock alone giveth triumph sure,',
+        'O’er the world’s array of wrong.'
+      ],
+      [
+        'Firmly stand for Truth, it will serve you best;',
+        'Tho’ it waiteth long, it is sure at last;',
+        '’Tis the Rock alone giveth peace and rest,',
+        'When the storms of life are past.'
+      ]
+    ],
+    englishChorus: [
+      'Let us stand on the Rock, firmly stand on the Rock,',
+      'On the Rock of Christ alone;',
+      'If the strife we endure, we shall stand secure,',
+      '’Mid the throng who surround the throne.'
+    ]
+  },
+  {
+    id: 'hymn-39',
+    number: 39,
+    title: 'Busumino Bwandi',
+    writer: 'Edward Mote / William B. Bradbury',
+    englishTune: 'My Hope Is Built (The Solid Rock)',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukushintilila no Kutetekela',
+    key: 'F Major',
+    timeSignature: '3/4',
+    scripture: '1 Abena Korinte 3:11 · Matayo 7:24-25 · Amalumbo 62:1-2',
+    isSample: false,
+    melodicPreview: [60, 65, 65, 65, 67, 69, 65, 67, 69, 70, 69, 67, 65],
+    verses: [
+      [
+        'Busumino bwandi nomba,',
+        'Mu mulopa wakwa Yesu;',
+        'Mu bantu nshilesumina,',
+        'Kano Mfumu Yesu eka.'
+      ],
+      [
+        'Lintu mpumi nshilemona,',
+        'Ndesumina luse lwakwe',
+        'Mu macusho yakalamba,',
+        'Yesu ni cibusa wandi.'
+      ],
+      [
+        'Ubulayo bwakwa Yesu',
+        'Bwankosesha umutima;',
+        'Nga natendeko kufilwa,',
+        'Ni Yesu anjikatila.'
+      ],
+      [
+        'Ndemufwaya ukunsunga,',
+        'No kubutisha mutima;',
+        'Kabili lintu mukesa,',
+        'Munsende ine ku mulu'
+      ]
+    ],
+    chorus: [
+      'Yesu ni Li bwe lya maka,',
+      'Ifintu fimbi ifya fye',
+      'Ifintu fimbi ifya fye.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'My hope is built on nothing less',
+        'Than Jesus’ blood and righteousness;',
+        'I dare not trust the sweetest frame,',
+        'But wholly lean on Jesus’ name.'
+      ],
+      [
+        'When darkness veils His lovely face,',
+        'I rest on His unchanging grace;',
+        'In every high and stormy gale,',
+        'My anchor holds within the veil.'
+      ],
+      [
+        'His oath, His covenant, His blood,',
+        'Support me in the whelming flood;',
+        'When all around my soul gives way,',
+        'He then is all my hope and stay.'
+      ],
+      [
+        'When He shall come with trumpet sound,',
+        'O may I then in Him be found;',
+        'Dressed in His righteousness alone,',
+        'Faultless to stand before the throne.'
+      ]
+    ],
+    englishChorus: [
+      'On Christ, the solid Rock, I stand;',
+      'All other ground is sinking sand,',
+      'All other ground is sinking sand.'
+    ]
+  },
+  {
+    id: 'hymn-40',
+    number: 40,
+    title: 'Nga Twaya ne Mfumu',
+    writer: 'John H. Sammis / Daniel B. Towner',
+    englishTune: 'Trust and Obey',
+    category: 'trust-and-assurance',
+    categoryBemba: 'Ukunakila no Kutetekela',
+    key: 'F Major',
+    timeSignature: '3/4',
+    scripture: '1 Samwele 15:22 · Yohane 14:15, 21 · Amalumbo 119:105',
+    isSample: false,
+    melodicPreview: [65, 67, 69, 69, 67, 65, 67, 69, 65, 62, 60],
+    verses: [
+      [
+        'Nga twaya ne Mfumu mu mashiwi yakwe',
+        'Atupelo lubuto pefye:',
+        'Lintu tunakila, Ekala mupepi,',
+        'Na kuli bonse banakila'
+      ],
+      [
+        'Amacusho yonse yafumiwa bwangu',
+        'Lintu Lesa ati, "Mutende."',
+        'Te ukutwishika, takuli bulanda,',
+        'Lintu tulenakila Yesu'
+      ],
+      [
+        'Lelo tatwishiba, Ukutemwa kwakwe,',
+        'Pantu tatumusuminisha;',
+        'Amapalo yakwe, No buseko bonse,',
+        'Kuli abo bamusumina.'
+      ],
+      [
+        'Nomba ne cacine, Tukaba pankasa,',
+        'Nelyo tukenda nankwe bwino;',
+        'Amashiwi yakwe, Tukacita pe pe.',
+        'Muli fyonse tukasumina,'
+      ]
+    ],
+    chorus: [
+      'Mumfwile pe, pantu kuli bonse,',
+      'Basumina na Yesu,',
+      'Abapela kwanga'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'When we walk with the Lord in the light of His Word,',
+        'What a glory He sheds on our way!',
+        'While we do His good will, He abides with us still,',
+        'And with all who will trust and obey.'
+      ],
+      [
+        'Not a shadow can rise, not a cloud in the skies,',
+        'But His smile quickly drives it away;',
+        'Not a doubt nor a fear, not a sigh nor a tear,',
+        'Can abide while we trust and obey.'
+      ],
+      [
+        'But we never can prove the delights of His love,',
+        'Until all on the altar we lay;',
+        'For the favor He shows, and the joy He bestows,',
+        'Are for them who will trust and obey.'
+      ],
+      [
+        'Then in fellowship sweet we will sit at His feet,',
+        'Or we’ll walk by His side in the way;',
+        'What He says we will do, where He sends we will go,',
+        'Never fear, only trust and obey.'
+      ]
+    ],
+    englishChorus: [
+      'Trust and obey, for there’s no other way',
+      'To be happy in Jesus,',
+      'But to trust and obey.'
+    ]
+  },
+  {
+    id: 'hymn-41',
+    number: 41,
+    title: "Lesa 'be Nemwe",
+    writer: 'Jeremiah E. Rankin / William G. Tomer',
+    englishTune: 'God Be With You Till We Meet Again',
+    category: 'faith-and-trust',
+    categoryBemba: 'Amapalo ya Kupwisha',
+    key: 'C Major',
+    timeSignature: '4/4',
+    scripture: 'Ukutendeka 31:49 · 2 Abena Korinte 13:14 · Numeri 6:24-26',
+    isSample: false,
+    melodicPreview: [67, 64, 67, 69, 67, 64, 65, 62, 60],
+    verses: [
+      [
+        "Lesa 'be nemwe tukumane;",
+        'Amutungulula bwino,',
+        'Amufimba no luse lwakwe;',
+        "Lesa 'be nemwe tukumane."
+      ],
+      [
+        "Lesa 'be nemwe tukumane,",
+        'Amufimba na mapindo,',
+        'Amwikushisha na mana;',
+        "Lesa 'be nemwe tukumane"
+      ],
+      [
+        "Lesa 'be nemwe tukumane,",
+        'Lintu muli mumacusho,',
+        'Alemukumba nshiku pe,',
+        "Lesa 'be nemwe tukumane."
+      ],
+      [
+        "Lesa 'be nemwe tukumane,",
+        'Amwisusha no kutemwa,',
+        'A-lesha imfwa kuli mwe,',
+        "Lesa 'be nemwe tukumane."
+      ]
+    ],
+    chorus: [
+      'Lintu twakumana,',
+      'Bonse fye kuli Yesu;',
+      'Lintu twakumana,',
+      "Lesa 'be nemwe tukumane."
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'God be with you till we meet again;',
+        'By His counsels guide, uphold you,',
+        'With His sheep securely fold you;',
+        'God be with you till we meet again.'
+      ],
+      [
+        'God be with you till we meet again;',
+        '’Neath His wings protecting hide you,',
+        'Daily manna still provide you;',
+        'God be with you till we meet again.'
+      ],
+      [
+        'God be with you till we meet again;',
+        'When life’s perils thick confound you,',
+        'Put His loving arms around you;',
+        'God be with you till we meet again.'
+      ],
+      [
+        'God be with you till we meet again;',
+        'Keep love’s banner floating o’er you,',
+        'Smite death’s threatening wave before you;',
+        'God be with you till we meet again.'
+      ]
+    ],
+    englishChorus: [
+      'Till we meet, till we meet,',
+      'Till we meet at Jesus’ feet;',
+      'Till we meet, till we meet,',
+      'God be with you till we meet again.'
+    ]
+  },
+  {
+    id: 'hymn-42',
+    number: 42,
+    title: 'Kuli Bamunyinane Kuno',
+    writer: 'Anzentia I. P. Chapman / John H. Tenney',
+    englishTune: 'With Friends on Earth (We’ll Never Say Goodbye)',
+    category: 'second-coming-and-heaven',
+    categoryBemba: 'Ubwishilo bwa kwa Kristu no Muulu',
+    key: 'Ab Major',
+    timeSignature: '4/4',
+    scripture: 'Ukusokolola 21:4 · 1 Abena Tesalonika 4:17-18 · Ukusokolola 7:16-17',
+    isSample: false,
+    melodicPreview: [60, 63, 68, 72, 72, 70, 68, 65, 63],
+    verses: [
+      [
+        'Kuli bamunyinane kuno',
+        'Tulesekelela,',
+        'Lelo bulanda bwaisa',
+        'Kulekana libili.'
+      ],
+      [
+        'Icintu cimo tusekesha',
+        'Lintu tulekana,',
+        'Kuti tatwakalekane',
+        'Ku calo ca kwa Lesa.'
+      ],
+      [
+        'Mashiwi yakulekana',
+        'Tayakabe ko kulya,',
+        'Lelo nyimbo sha buseko',
+        'Tukemba mu mulu pe.'
+      ]
+    ],
+    chorus: [
+      'Tatwakalekane uko',
+      'Ku calo ca Lesa,',
+      'Mu calo ico cawama',
+      'Tatwakalekane.'
+    ],
+    chorusLabel: 'Chibwekesho',
+    englishVerses: [
+      [
+        'With friends on earth we meet in gladness,',
+        'While swift the moments fly,',
+        'Yet ever comes the thought of sadness,',
+        'That we must say goodbye.'
+      ],
+      [
+        'How joyful is the hope that lingers,',
+        'When loved ones cross death’s sea,',
+        'That we, when all earth’s toils are ended,',
+        'With them shall ever be.'
+      ],
+      [
+        'No parting words shall e’er be spoken,',
+        'In yonder home so fair,',
+        'But songs of joy, and peace, and gladness,',
+        'We’ll sing forever there.'
+      ]
+    ],
+    englishChorus: [
+      'We’ll never say goodbye in heaven,',
+      'We’ll never say goodbye;',
+      'For in that land of joy and song,',
+      'We’ll never say goodbye.'
+    ]
   },
   {
     id: 'hymn-49',
