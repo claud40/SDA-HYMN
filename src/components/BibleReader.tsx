@@ -66,10 +66,30 @@ interface BibleReaderProps {
 }
 
 const OLD_TESTAMENT_COUNT = 39;
+const MAX_SELECTED_VERSES = 10;
 const STORAGE_BOOK_KEY = 'hymnal_bible_book_idx';
 const STORAGE_CHAPTER_KEY = 'hymnal_bible_chapter_idx';
 const STORAGE_VERSION_KEY = 'hymnal_bible_version';
 const STORAGE_HIGHLIGHTS_KEY = 'hymnal_bible_highlights';
+
+function formatVerseRanges(nums: number[]): string {
+  if (nums.length === 0) return '';
+  const sorted = [...nums].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  let start = sorted[0];
+  let end = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      ranges.push(start === end ? `${start}` : `${start}–${end}`);
+      start = sorted[i];
+      end = sorted[i];
+    }
+  }
+  ranges.push(start === end ? `${start}` : `${start}–${end}`);
+  return ranges.join(', ');
+}
 
 type HighlightColorId = 'amber' | 'emerald' | 'sky' | 'rose';
 
@@ -140,7 +160,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   });
 
   const [highlightedVerse, setHighlightedVerse] = useState<number | null>(null);
-  const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
+  const [selectedVerses, setSelectedVerses] = useState<number[]>([]);
   const [savedHighlights, setSavedHighlights] = useState<Record<string, HighlightColorId>>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_HIGHLIGHTS_KEY);
@@ -151,8 +171,9 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   });
   const [searchInput, setSearchInput] = useState<string>(initialQuery);
   const [searchResults, setSearchResults] = useState<SearchMatch[] | null>(null);
-  const [copiedVerseKey, setCopiedVerseKey] = useState<string | null>(null);
-  const [sharedVerseKey, setSharedVerseKey] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [isShared, setIsShared] = useState<boolean>(false);
+  const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
   const [showBookPicker, setShowBookPicker] = useState<boolean>(false);
   const [testamentFilter, setTestamentFilter] = useState<'all' | 'ot' | 'nt'>('all');
 
@@ -210,6 +231,26 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     }
   }, [bookIdx, chapterIdx, selectedVersion]);
 
+  // Sync Bible version & highlights when changed from Settings
+  useEffect(() => {
+    const handleBibleSettingsChange = () => {
+      try {
+        const storedVer = localStorage.getItem(STORAGE_VERSION_KEY);
+        if (storedVer && BIBLE_VERSIONS.some((v) => v.id === storedVer)) {
+          setSelectedVersion(storedVer);
+        }
+        const rawHighlights = localStorage.getItem(STORAGE_HIGHLIGHTS_KEY);
+        setSavedHighlights(rawHighlights ? JSON.parse(rawHighlights) : {});
+      } catch {
+        // ignore storage errors
+      }
+    };
+    window.addEventListener('hymnal-bible-settings-change', handleBibleSettingsChange);
+    return () => {
+      window.removeEventListener('hymnal-bible-settings-change', handleBibleSettingsChange);
+    };
+  }, []);
+
   const currentBook = books ? books[bookIdx] || books[0] : null;
   const safeChapterIdx =
     currentBook && chapterIdx < currentBook.chapters.length ? chapterIdx : 0;
@@ -219,7 +260,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     setBookIdx(idx);
     setChapterIdx(0);
     setHighlightedVerse(null);
-    setSelectedVerse(null);
+    setSelectedVerses([]);
     setSearchResults(null);
     setShowBookPicker(false);
   };
@@ -227,7 +268,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const handleSelectChapter = (chIdx: number) => {
     setChapterIdx(chIdx);
     setHighlightedVerse(null);
-    setSelectedVerse(null);
+    setSelectedVerses([]);
     setSearchResults(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -241,7 +282,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       setBookIdx(bookIdx - 1);
       setChapterIdx(prevBook.chapters.length - 1);
       setHighlightedVerse(null);
-      setSelectedVerse(null);
+      setSelectedVerses([]);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -254,7 +295,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       setBookIdx(bookIdx + 1);
       setChapterIdx(0);
       setHighlightedVerse(null);
-      setSelectedVerse(null);
+      setSelectedVerses([]);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -289,7 +330,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
         setBookIdx(matchedBookIdx);
         setChapterIdx(ch);
         setHighlightedVerse(verseStr ? parseInt(verseStr, 10) : null);
-        setSelectedVerse(null);
+        setSelectedVerses([]);
         setSearchResults(null);
         setShowBookPicker(false);
         return;
@@ -319,14 +360,37 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     setSearchResults(matches);
   };
 
-  const handleToggleHighlight = (verseNum: number, color: HighlightColorId | null) => {
-    const key = `${bookIdx}-${safeChapterIdx}-${verseNum}`;
+  const showNotice = (msg: string) => {
+    setSelectionNotice(msg);
+    setTimeout(() => setSelectionNotice((prev) => (prev === msg ? null : prev)), 2200);
+  };
+
+  const handleToggleMarkVerse = (verseNum: number) => {
+    setIsCopied(false);
+    setIsShared(false);
+    setSelectedVerses((prev) => {
+      if (prev.includes(verseNum)) {
+        return prev.filter((v) => v !== verseNum);
+      }
+      if (prev.length >= MAX_SELECTED_VERSES) {
+        showNotice(`Maximum ${MAX_SELECTED_VERSES} verses can be marked at once`);
+        return prev;
+      }
+      return [...prev, verseNum].sort((a, b) => a - b);
+    });
+  };
+
+  const handleApplyHighlight = (color: HighlightColorId | null) => {
+    if (selectedVerses.length === 0) return;
     setSavedHighlights((prev) => {
       const next = { ...prev };
-      if (color === null || next[key] === color) {
-        delete next[key];
-      } else {
-        next[key] = color;
+      for (const verseNum of selectedVerses) {
+        const key = `${bookIdx}-${safeChapterIdx}-${verseNum}`;
+        if (color === null) {
+          delete next[key];
+        } else {
+          next[key] = color;
+        }
       }
       try {
         localStorage.setItem(STORAGE_HIGHLIGHTS_KEY, JSON.stringify(next));
@@ -335,28 +399,42 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       }
       return next;
     });
+    // Dismiss options immediately after highlighting/clearing
+    setSelectedVerses([]);
+    setSelectionNotice(null);
+    setIsCopied(false);
+    setIsShared(false);
   };
 
-  const handleCopyVerse = (verseNum: number, text: string) => {
-    if (!currentBook) return;
-    const key = `${bookIdx}-${safeChapterIdx}-${verseNum}`;
-    const citation = `${currentBook.name} ${safeChapterIdx + 1}:${verseNum} (${versionInfo.label})`;
-    navigator.clipboard?.writeText(`"${text}" — ${citation}`).catch(() => {});
-    setCopiedVerseKey(key);
-    setTimeout(() => setCopiedVerseKey((prev) => (prev === key ? null : prev)), 1800);
+  const buildSelectedPayload = () => {
+    if (!currentBook || selectedVerses.length === 0) return null;
+    const sorted = [...selectedVerses].sort((a, b) => a - b);
+    const citation = `${currentBook.name} ${safeChapterIdx + 1}:${formatVerseRanges(sorted)} (${versionInfo.label})`;
+    if (sorted.length === 1) {
+      const text = currentVerses[sorted[0] - 1] || '';
+      return { citation, body: `"${text}" — ${citation}` };
+    }
+    const lines = sorted.map((vNum) => `${vNum} ${currentVerses[vNum - 1] || ''}`);
+    return { citation, body: `${lines.join('\n')}\n— ${citation}` };
   };
 
-  const handleShareVerse = async (verseNum: number, text: string) => {
-    if (!currentBook) return;
-    const key = `${bookIdx}-${safeChapterIdx}-${verseNum}`;
-    const citation = `${currentBook.name} ${safeChapterIdx + 1}:${verseNum} (${versionInfo.label})`;
-    const shareText = `"${text}" — ${citation}`;
+  const handleCopySelected = () => {
+    const payload = buildSelectedPayload();
+    if (!payload) return;
+    navigator.clipboard?.writeText(payload.body).catch(() => {});
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1800);
+  };
+
+  const handleShareSelected = async () => {
+    const payload = buildSelectedPayload();
+    if (!payload) return;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: citation,
-          text: shareText,
+          title: payload.citation,
+          text: payload.body,
         });
         return;
       } catch {
@@ -364,10 +442,14 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       }
     }
 
-    navigator.clipboard?.writeText(shareText).catch(() => {});
-    setSharedVerseKey(key);
-    setTimeout(() => setSharedVerseKey((prev) => (prev === key ? null : prev)), 1800);
+    navigator.clipboard?.writeText(payload.body).catch(() => {});
+    setIsShared(true);
+    setTimeout(() => setIsShared(false), 1800);
   };
+
+  const anySelectedHighlighted = selectedVerses.some(
+    (vNum) => Boolean(savedHighlights[`${bookIdx}-${safeChapterIdx}-${vNum}`])
+  );
 
   const filteredBooks = useMemo(() => {
     if (!books) return [];
@@ -618,6 +700,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                     setBookIdx(m.bookIndex);
                     setChapterIdx(m.chapterIndex);
                     setHighlightedVerse(m.verseIndex + 1);
+                    setSelectedVerses([]);
                     setSearchResults(null);
                   }}
                   className="w-full text-left py-3 hover:bg-stone-50 dark:hover:bg-stone-800/40 px-2 rounded-lg transition-colors"
@@ -637,14 +720,18 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
 
       {/* Chapter Verses Reader */}
       {!isLoading && !loadError && !searchResults && currentBook && (
-        <article className="w-full bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 py-5 sm:px-8 sm:py-8">
+        <article
+          className={`w-full bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 py-5 sm:px-8 sm:py-8 ${
+            selectedVerses.length > 0 ? 'pb-32 sm:pb-28' : ''
+          }`}
+        >
           <header className="pb-5 mb-6 border-b border-stone-200/70 dark:border-stone-800 flex items-baseline justify-between gap-4 flex-wrap">
             <div>
               <h3 className="font-display text-2xl sm:text-3xl font-bold text-stone-900 dark:text-stone-100">
                 {currentBook.name} {safeChapterIdx + 1}
               </h3>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
-                {versionInfo.fullName} · {currentVerses.length} verses · Tap any verse to highlight, copy, or share
+                {versionInfo.fullName} · {currentVerses.length} verses · Tap up to {MAX_SELECTED_VERSES} verses to highlight, copy, or share
               </p>
             </div>
           </header>
@@ -653,8 +740,9 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             className="w-full space-y-2.5"
             style={{
               fontFamily: 'var(--hymn-font-family, inherit)',
-              fontSize: 'var(--verse-font-size, 1.0625rem)',
-              lineHeight: 'var(--verse-line-height, 1.7)',
+              fontSize: 'var(--hymn-verse-size, 1.0625rem)',
+              lineHeight: 'var(--hymn-line-height, 1.7)',
+              fontWeight: 'var(--hymn-font-weight, 400)' as React.CSSProperties['fontWeight'],
             }}
           >
             {currentVerses.map((verseText, idx) => {
@@ -663,9 +751,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               const userColorId = savedHighlights[vKey];
               const userColorObj = HIGHLIGHT_COLORS.find((c) => c.id === userColorId);
               const isJumpHighlighted = highlightedVerse === verseNum;
-              const isSelected = selectedVerse === verseNum;
-              const isCopied = copiedVerseKey === vKey;
-              const isShared = sharedVerseKey === vKey;
+              const isSelected = selectedVerses.includes(verseNum);
 
               const rowBgClass = userColorObj
                 ? userColorObj.rowClass
@@ -676,106 +762,35 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               return (
                 <div
                   key={verseNum}
-                  className={`rounded-xl transition-colors ${rowBgClass}`}
+                  className={`rounded-xl transition-colors ${rowBgClass} ${
+                    isSelected ? 'ring-1 ring-amber-800/45 dark:ring-amber-400/50' : ''
+                  }`}
                 >
                   <button
                     type="button"
-                    onClick={() =>
-                      setSelectedVerse((prev) => (prev === verseNum ? null : verseNum))
-                    }
+                    onClick={() => handleToggleMarkVerse(verseNum)}
+                    aria-pressed={isSelected}
                     className="w-full text-left flex items-start gap-3 px-2.5 py-2 rounded-xl cursor-pointer"
                   >
-                    <span className="w-7 shrink-0 text-right font-mono tabular-nums text-xs font-semibold text-amber-900/80 dark:text-amber-400/90 pt-1.5 select-none">
+                    <span
+                      className={`w-7 shrink-0 text-right font-mono tabular-nums text-xs font-semibold pt-1.5 select-none ${
+                        isSelected
+                          ? 'text-amber-950 dark:text-amber-300 underline decoration-2 underline-offset-4'
+                          : 'text-amber-900/80 dark:text-amber-400/90'
+                      }`}
+                    >
                       {verseNum}
                     </span>
-                    <span className="flex-1 text-stone-900 dark:text-stone-100">
+                    <span
+                      className={`flex-1 text-stone-900 dark:text-stone-100 ${
+                        isSelected
+                          ? 'underline decoration-dotted decoration-amber-800/70 dark:decoration-amber-400/70 underline-offset-4'
+                          : ''
+                      }`}
+                    >
                       {verseText}
                     </span>
                   </button>
-
-                  {/* Tap Action Bar: Highlight colors, Copy, Share */}
-                  {isSelected && (
-                    <div className="px-3 pb-3 pt-1 ml-10 flex flex-wrap items-center gap-2 border-t border-stone-200/60 dark:border-stone-800/60">
-                      <div className="flex items-center gap-1.5 mr-1">
-                        <Highlighter className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 mr-0.5" />
-                        {HIGHLIGHT_COLORS.map((c) => {
-                          const activeColor = userColorId === c.id;
-                          return (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => handleToggleHighlight(verseNum, c.id)}
-                              aria-label={`Highlight ${currentBook.name} ${safeChapterIdx + 1}:${verseNum} in ${c.label}`}
-                              title={`Highlight ${c.label}`}
-                              className={`w-7 h-7 rounded-full border transition-transform flex items-center justify-center ${c.swatchClass} ${
-                                activeColor
-                                  ? 'ring-2 ring-stone-900 dark:ring-white scale-105'
-                                  : 'hover:scale-105'
-                              }`}
-                            >
-                              {activeColor && <Check className="w-3.5 h-3.5 text-stone-900" />}
-                            </button>
-                          );
-                        })}
-                        {userColorId && (
-                          <button
-                            type="button"
-                            onClick={() => handleToggleHighlight(verseNum, null)}
-                            className="h-8 px-2.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 ml-auto">
-                        <button
-                          type="button"
-                          onClick={() => handleCopyVerse(verseNum, verseText)}
-                          className="h-9 px-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5 transition-colors"
-                        >
-                          {isCopied ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
-                              <span>Copied</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5" />
-                              <span>Copy</span>
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleShareVerse(verseNum, verseText)}
-                          className="h-9 px-3 rounded-lg bg-amber-900 hover:bg-amber-950 dark:bg-amber-800 dark:hover:bg-amber-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
-                        >
-                          {isShared ? (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Ready to Share</span>
-                            </>
-                          ) : (
-                            <>
-                              <Share2 className="w-3.5 h-3.5" />
-                              <span>Share</span>
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setSelectedVerse(null)}
-                          aria-label="Close verse actions"
-                          className="w-9 h-9 rounded-lg flex items-center justify-center text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -806,6 +821,106 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             </button>
           </footer>
         </article>
+      )}
+
+      {/* Floating Multi-Verse Action Bar (up to 10 verses) */}
+      {selectedVerses.length > 0 && currentBook && (
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-2xl z-30">
+          {selectionNotice && (
+            <div className="mb-2 mx-auto w-fit px-3 py-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-medium shadow-md">
+              {selectionNotice}
+            </div>
+          )}
+
+          <div className="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border border-stone-200 dark:border-stone-700 rounded-2xl shadow-2xl px-3.5 py-3 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <div className="font-semibold text-stone-900 dark:text-stone-100 truncate">
+                {currentBook.name} {safeChapterIdx + 1}:{formatVerseRanges(selectedVerses)}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-stone-500 dark:text-stone-400 font-mono tabular-nums">
+                  {selectedVerses.length}/{MAX_SELECTED_VERSES} marked
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedVerses([]);
+                    setSelectionNotice(null);
+                  }}
+                  aria-label="Clear selected verses"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-stone-200/70 dark:border-stone-800">
+              {/* Highlight Color Swatches (tapping applies color & closes bar immediately) */}
+              <div className="flex items-center gap-1.5">
+                <Highlighter className="w-4 h-4 text-stone-500 dark:text-stone-400 mr-0.5 shrink-0" />
+                {HIGHLIGHT_COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleApplyHighlight(c.id)}
+                    aria-label={`Highlight marked verses in ${c.label}`}
+                    title={`Highlight ${c.label}`}
+                    className={`w-8 h-8 rounded-full border transition-transform hover:scale-110 active:scale-95 flex items-center justify-center ${c.swatchClass}`}
+                  />
+                ))}
+                {anySelectedHighlighted && (
+                  <button
+                    type="button"
+                    onClick={() => handleApplyHighlight(null)}
+                    className="h-8 px-2.5 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 text-xs font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ml-0.5"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Copy & Share Actions */}
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onClick={handleCopySelected}
+                  className="h-9 px-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5 transition-colors"
+                >
+                  {isCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShareSelected}
+                  className="h-9 px-3 rounded-lg bg-amber-900 hover:bg-amber-950 dark:bg-amber-800 dark:hover:bg-amber-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  {isShared ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Ready to Share</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Share</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

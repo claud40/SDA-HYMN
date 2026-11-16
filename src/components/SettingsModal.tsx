@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Settings,
@@ -24,27 +24,28 @@ import {
   Sliders,
   Compass,
   BookOpen,
+  BookMarked,
+  Highlighter,
   Star,
   Heart,
   Share2,
   MessageSquare,
   Send,
   Copy,
-  ExternalLink,
   Mail,
   MessageCircle,
   Gift,
   ThumbsUp,
-  AlertCircle,
   Phone,
   Database,
   Upload,
   Download,
   RefreshCw,
-  Plus,
-  HardDrive
+  Plus
 } from 'lucide-react';
 import { Hymn, SAMPLE_HYMNS } from '../data/hymns';
+import { HYMNAL_LANGUAGES, HymnalLanguageId, getHymnalLanguageConfig } from '../data/languages';
+import { BIBLE_VERSIONS } from './BibleReader';
 import { AdventistLogo } from './AdventistLogo';
 import { hymnalDB } from '../services/db';
 import { AddHymnModal } from './AddHymnModal';
@@ -56,7 +57,6 @@ import {
 } from '../utils/theme';
 import {
   applyTypographyToDOM,
-  getStoredTypography,
   TYPOGRAPHY_CONFIG,
   TextSizePreference as DefaultTextSize,
   LineSpacingPreference,
@@ -65,7 +65,7 @@ import {
 
 export type { ThemePreference, DefaultTextSize, DefaultFontFamily, LineSpacingPreference };
 export type AutoScrollSpeed = 'slow' | 'normal' | 'fast';
-export type AppLanguage = 'bemba' | 'english' | 'tonga' | 'nyanja';
+export type AppLanguage = HymnalLanguageId;
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -73,6 +73,9 @@ export interface SettingsModalProps {
   favorites?: string[];
   recentHymns?: { hymnId: string; number: number; title: string; timestamp: number }[];
   allHymns?: Hymn[];
+  activeLanguage?: HymnalLanguageId;
+  onSelectLanguage?: (lang: HymnalLanguageId) => Promise<void> | void;
+  onOpenBible?: () => void;
   onSelectHymn?: (hymn: Hymn) => void;
   onViewFavorites?: () => void;
   onClearRecentHistory?: () => void;
@@ -85,19 +88,33 @@ export interface SettingsModalProps {
 
 type SettingsTab = 'all' | 'appearance' | 'reading' | 'preferences' | 'database' | 'feedback' | 'support' | 'about';
 
+function getStoredBibleHighlightCount(): number {
+  try {
+    const raw = localStorage.getItem('hymnal_bible_highlights');
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   favorites = [],
   recentHymns = [],
   allHymns = SAMPLE_HYMNS,
+  activeLanguage = 'bemba',
+  onSelectLanguage,
+  onOpenBible,
   onSelectHymn,
   onViewFavorites,
   onClearRecentHistory,
   onShowSplashScreen,
   onSaveHymn,
   onImportHymns,
-  onDeleteHymn,
+  onDeleteHymn: _onDeleteHymn,
   onSyncStaticJSON,
 }) => {
   // Active settings section tab for easy navigation
@@ -120,10 +137,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return localStorage.getItem('hymnal_bold_text') === 'true';
   });
 
-  // Language
-  const [appLang, setAppLang] = useState<AppLanguage>(() => {
-    return (localStorage.getItem('hymnal_app_lang') as AppLanguage) || 'bemba';
+  const activeLangConfig = getHymnalLanguageConfig(activeLanguage);
+
+  // Bible Preferences
+  const [bibleVersion, setBibleVersion] = useState<string>(() => {
+    try {
+      return localStorage.getItem('hymnal_bible_version') || 'kjv';
+    } catch {
+      return 'kjv';
+    }
   });
+  const [bibleHighlightCount, setBibleHighlightCount] = useState<number>(() => getStoredBibleHighlightCount());
 
   // Reading Options (Auto-scroll & Wake Lock)
   const [autoScrollEnabled, setAutoScrollEnabled] = useState<boolean>(() => {
@@ -196,7 +220,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setLineSpacing((localStorage.getItem('hymnal_line_spacing') as LineSpacingPreference) || 'relaxed');
       setDefaultFontFamily((localStorage.getItem('hymnal_font_family') as DefaultFontFamily) || 'serif');
       setIsBoldText(localStorage.getItem('hymnal_bold_text') === 'true');
-      setAppLang((localStorage.getItem('hymnal_app_lang') as AppLanguage) || 'bemba');
+      setBibleVersion(localStorage.getItem('hymnal_bible_version') || 'kjv');
+      setBibleHighlightCount(getStoredBibleHighlightCount());
       setAutoScrollEnabled(localStorage.getItem('hymnal_autoscroll_enabled') === 'true');
       setAutoScrollSpeed((localStorage.getItem('hymnal_autoscroll_speed') as AutoScrollSpeed) || 'normal');
       setKeepScreenAwake(localStorage.getItem('hymnal_wake_lock') === 'true');
@@ -290,11 +315,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     showFeedback(next ? 'Projector Bold Mode enabled (Amalembo yakosa)' : 'Normal text weight restored');
   };
 
-  // Language
-  const handleSelectLanguage = (lang: AppLanguage) => {
-    setAppLang(lang);
-    localStorage.setItem('hymnal_app_lang', lang);
-    showFeedback(lang === 'bemba' ? 'Language set to: Bemba (Primary Catalog)' : `Language set to: ${lang.toUpperCase()} (Support in preparation)`);
+  // Hymnal Language & Bible Preferences
+  const handleSelectHymnalLanguage = async (langId: HymnalLanguageId) => {
+    const cfg = getHymnalLanguageConfig(langId);
+    if (!cfg.available) {
+      showFeedback(`${cfg.label} (${cfg.bookTitle}) is upcoming and will be available soon.`);
+      return;
+    }
+    if (onSelectLanguage) {
+      await onSelectLanguage(langId);
+    }
+    showFeedback(`Hymnal language switched to ${cfg.label} (${cfg.bookTitle} · ${cfg.hymnCount} hymns)`);
+  };
+
+  const handleSelectBibleVersion = (verId: string) => {
+    setBibleVersion(verId);
+    try {
+      localStorage.setItem('hymnal_bible_version', verId);
+    } catch {
+      // ignore
+    }
+    window.dispatchEvent(new CustomEvent('hymnal-bible-settings-change'));
+    const verInfo = BIBLE_VERSIONS.find((v) => v.id === verId);
+    showFeedback(`Default Bible version set to: ${verInfo ? `${verInfo.label} (${verInfo.fullName})` : verId.toUpperCase()}`);
+  };
+
+  const handleClearBibleHighlights = () => {
+    try {
+      localStorage.removeItem('hymnal_bible_highlights');
+    } catch {
+      // ignore
+    }
+    setBibleHighlightCount(0);
+    window.dispatchEvent(new CustomEvent('hymnal-bible-settings-change'));
+    showFeedback('All Bible verse highlights have been cleared');
   };
 
   // Reading options
@@ -350,7 +404,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     handleSelectFontFamily('serif');
     setIsBoldText(false);
     localStorage.setItem('hymnal_bold_text', 'false');
-    handleSelectLanguage('bemba');
+    handleSelectBibleVersion('kjv');
     setAutoScrollEnabled(false);
     localStorage.setItem('hymnal_autoscroll_enabled', 'false');
     setAutoScrollSpeed('normal');
@@ -462,18 +516,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       `Date: ${new Date().toLocaleString()}\n\n` +
       `Feedback / Correction Details:\n${cleanMessage || '(Please specify your remarks or correction notes here)'}\n\n` +
       `----------------------------------------\n` +
-      `App: Kristu Mu Nyimbo — Bemba SDA Hymnal (v2.5.0 PWA)\n` +
+      `App: Kristu Mu Nyimbo — Multi-Language SDA Hymnal & Holy Bible (v3.0 PWA)\n` +
       `Seventh-day Adventist Church • Zambia Union Conference Publications`
     );
     window.location.href = `mailto:worship@kristumunyimbo.adventist.org.zm?subject=${subject}&body=${body}`;
   };
 
-  // Send Feedback directly via WhatsApp (+260771500266) with safe plain text & clamped message
-  const handleSendWhatsAppFeedback = () => {
+  // Build safe WhatsApp URLs without window.open
+  const whatsAppFeedbackUrl = (() => {
     const cleanMessage = sanitizePlainText(feedbackMessage, 600);
     const cleanHymnNum = sanitizeHymnNumber(feedbackHymnNum);
     const cleanSender = sanitizePlainText(feedbackSender, 60);
-
     const categoryLabels = {
       lyrics: 'Hymn Lyric Correction',
       tune: 'Hymn Melody/Tune',
@@ -488,14 +541,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       (cleanSender ? `From: ${cleanSender}\n` : '') +
       `Message: ${cleanMessage || 'Greetings from church!'}`
     );
-    window.open(`https://wa.me/260771500266?text=${message}`, '_blank');
-  };
+    return `https://wa.me/260771500266?text=${message}`;
+  })();
+
+  const whatsAppShareUrl = `https://wa.me/?text=${encodeURIComponent(
+    `Mwashibukeni! Sing praises to God and read the Bible with Kristu Mu Nyimbo (Icibemba, Chitonga, Chichewa Hymnals + KJV/ESV/Good News Bible, 100% offline):\n${
+      typeof window !== 'undefined' ? window.location.href : ''
+    }`
+  )}`;
 
   // Share App via Web Share API or Clipboard
   const handleShareApp = async () => {
     const shareData = {
-      title: 'Kristu Mu Nyimbo — Bemba SDA Hymnal',
-      text: 'Lumbanyani Lesa! Sing praises with Kristu Mu Nyimbo — the digital Bemba Seventh-day Adventist Hymnal with fast number search, verses, and 100% offline access.',
+      title: 'Kristu Mu Nyimbo — SDA Hymnal & Holy Bible',
+      text: 'Lumbanyani Lesa! Worship with Kristu Mu Nyimbo — Icibemba, Chitonga & Chichewa SDA Hymnals plus Holy Bible (KJV, ESV, Good News) with 100% offline access.',
       url: window.location.href,
     };
     if (navigator.share) {
@@ -518,13 +577,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setIsCopiedLink(true);
     showFeedback('App link copied to clipboard!');
     setTimeout(() => setIsCopiedLink(false), 2500);
-  };
-
-  const handleShareWhatsApp = () => {
-    const text = encodeURIComponent(
-      `Mwashibukeni! Sing praises to God with the Kristu Mu Nyimbo Bemba Seventh-day Adventist Hymnal app (100% offline):\n${window.location.href}`
-    );
-    window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
   const handleCopySupportInfo = () => {
@@ -839,18 +891,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-stone-800 dark:text-stone-200">
-                      Hymn Text Size
+                      Hymn &amp; Bible Text Size
                     </span>
                     <span className="text-[11px] text-stone-500 font-mono">
-                      {defaultTextSize === 'elder' ? '24px (Senior)' : defaultTextSize === 'xlarge' ? '21px (Extra Large)' : defaultTextSize === 'large' ? '18px (Large)' : '16px (Standard)'}
+                      {TYPOGRAPHY_CONFIG.textSize[defaultTextSize].desc} ({TYPOGRAPHY_CONFIG.textSize[defaultTextSize].label})
                     </span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
                       { id: 'standard', label: 'Standard', desc: '16px' },
-                      { id: 'large', label: 'Large', desc: '18px' },
-                      { id: 'xlarge', label: 'Extra Large', desc: '21px' },
-                      { id: 'elder', label: 'Senior', desc: '24px' },
+                      { id: 'large', label: 'Large', desc: '19px' },
+                      { id: 'xlarge', label: 'Extra Large', desc: '23px' },
+                      { id: 'elder', label: 'Senior', desc: '28px' },
                     ].map((item) => (
                       <button
                         key={item.id}
@@ -1258,6 +1310,78 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       No recently viewed hymns recorded yet.
                     </p>
                   )}
+                  {/* Holy Bible Preferences (Default Translation & Verse Highlights) */}
+                  <div className="pt-3 border-t border-stone-200/80 dark:border-stone-800 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                        <BookMarked className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />
+                        <span>Holy Bible Translation &amp; Highlights</span>
+                      </span>
+                      {onOpenBible && (
+                        <button
+                          type="button"
+                          onClick={onOpenBible}
+                          className="text-xs font-semibold text-amber-900 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Open Bible</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {BIBLE_VERSIONS.map((v) => {
+                        const active = bibleVersion === v.id;
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => handleSelectBibleVersion(v.id)}
+                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                              active
+                                ? 'border-amber-800 bg-amber-900 text-white shadow-xs'
+                                : 'border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-800/60 text-stone-800 dark:text-stone-200 hover:border-amber-700/40'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold">{v.label}</span>
+                              {active && <Check className="w-3.5 h-3.5" />}
+                            </div>
+                            <div className={`text-[10px] mt-0.5 truncate ${active ? 'text-amber-100' : 'text-stone-500 dark:text-stone-400'}`}>
+                              {v.fullName}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-stone-50/80 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-800 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <Highlighter className="w-4 h-4 text-amber-800 dark:text-amber-400 shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold text-stone-900 dark:text-stone-100">
+                            Saved Bible Verse Highlights
+                          </div>
+                          <div className="text-[11px] text-stone-500 dark:text-stone-400">
+                            {bibleHighlightCount === 0
+                              ? 'Tap up to 10 verses in the Bible reader to highlight them'
+                              : `${bibleHighlightCount} highlighted ${bibleHighlightCount === 1 ? 'verse' : 'verses'} saved on this device`}
+                          </div>
+                        </div>
+                      </div>
+
+                      {bibleHighlightCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearBibleHighlights}
+                          className="px-3 py-1.5 rounded-lg border border-stone-300 dark:border-stone-700 hover:border-red-400 text-xs font-medium text-stone-700 hover:text-red-700 dark:text-stone-300 dark:hover:text-red-400 bg-white dark:bg-stone-900 flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Clear Highlights</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </section>
             )}
@@ -1270,38 +1394,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-2">
                     <Database className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                    <span>Hymnal Database & Content Management</span>
+                    <span>Hymnal Database &amp; Content Management</span>
                   </label>
                   <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>IndexedDB Ready (100% Offline)</span>
+                    <Check className="w-3 h-3" />
+                    <span>Offline Storage Ready</span>
                   </span>
                 </div>
                 <p className="text-xs text-stone-500 dark:text-stone-400">
-                  Manage the local hymn catalog, add new verified Bemba hymns one-by-one into IndexedDB, import structured JSON datasets, or export backup files.
+                  Manage the {activeLangConfig.englishName} ({activeLangConfig.bookTitle}) catalog, add custom hymns into IndexedDB, import structured JSON datasets, or export backup files.
                 </p>
 
                 {/* Database Metrics Card */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Total Hymns</div>
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Active Hymnal ({activeLangConfig.label})</div>
                     <div className="text-lg font-bold font-mono text-stone-900 dark:text-stone-100 mt-0.5">
-                      {allHymns.length} <span className="text-xs font-sans font-normal text-stone-500">nyimbo</span>
+                      {allHymns.length} <span className="text-xs font-sans font-normal text-stone-500">hymns</span>
                     </div>
                   </div>
 
                   <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Offline Status</div>
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Bible Translations</div>
                     <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1">
                       <Check className="w-3.5 h-3.5" />
-                      <span>Cached Locally</span>
+                      <span>KJV · ESV · GNT (66 Books)</span>
                     </div>
                   </div>
 
                   <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Database Engine</div>
+                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Hymnal Editions</div>
                     <div className="text-xs font-bold text-stone-800 dark:text-stone-200 mt-1">
-                      IndexedDB (v1)
+                      Bemba · Tonga · Chewa
                     </div>
                   </div>
                 </div>
@@ -1317,7 +1441,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         Lundeniko Nyimbo Ipyani (Add Real Hymn 1 by 1)
                       </h4>
                       <p className="text-[11px] text-stone-600 dark:text-stone-400">
-                        Type or paste a real Bemba hymn with verses, chorus, and tune info directly into IndexedDB.
+                        Add a hymn with verses, chorus, and tune details directly into local IndexedDB storage.
                       </p>
                     </div>
                   </div>
@@ -1371,54 +1495,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="p-3 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center gap-2 font-medium transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <RefreshCw className={`w-4 h-4 text-amber-700 dark:text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
-                    <span>{isSyncing ? 'Syncing...' : 'Sync /data/hymns.json'}</span>
+                    <span>{isSyncing ? 'Syncing...' : 'Sync Default Catalog'}</span>
                   </button>
                 </div>
               </section>
             )}
 
             {/* ========================================================
-                SECTION 5: LANGUAGE SELECTION
+                SECTION 5: HYMNAL LANGUAGE SELECTION
                ======================================================== */}
             {(activeTab === 'all' || activeTab === 'appearance') && (
               <section className="bg-white dark:bg-stone-900/80 rounded-2xl p-4 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-2">
                     <Globe className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                    <span>5. Language Selection</span>
+                    <span>5. Hymnal Language Selection</span>
                   </label>
                   <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                    Bemba (Active)
+                    {activeLangConfig.label} (Active)
                   </span>
                 </div>
                 <p className="text-xs text-stone-500 dark:text-stone-400">
-                  Choose your interface language. Bemba is currently active; additional Zambian and regional hymnal editions are being prepared.
+                  Switch between the complete Seventh-day Adventist hymnal editions with English side-by-side support.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  {[
-                    { id: 'bemba', name: 'Bemba', status: 'Active (Native Hymnal)' },
-                    { id: 'english', name: 'English (SDA Hymnal)', status: 'In Preparation' },
-                    { id: 'tonga', name: 'Tonga (Kristu Mu Nyimbo)', status: 'In Preparation' },
-                    { id: 'nyanja', name: 'Nyanja (Nyimbo Za Khristu)', status: 'In Preparation' },
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleSelectLanguage(item.id as AppLanguage)}
-                      className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
-                        appLang === item.id
-                          ? 'border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 ring-2 ring-amber-800/20'
-                          : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold">{item.name}</span>
-                        {appLang === item.id && <Check className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />}
-                      </div>
-                      <span className="text-[10px] text-stone-400">{item.status}</span>
-                    </button>
-                  ))}
+                  {HYMNAL_LANGUAGES.map((lang) => {
+                    const isActive = activeLanguage === lang.id;
+                    return (
+                      <button
+                        key={lang.id}
+                        type="button"
+                        onClick={() => handleSelectHymnalLanguage(lang.id)}
+                        className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                          !lang.available
+                            ? 'border-stone-200 dark:border-stone-800 bg-stone-50/40 dark:bg-stone-900/40 opacity-70'
+                            : isActive
+                            ? 'border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 ring-2 ring-amber-800/20'
+                            : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold">
+                            {lang.label} — {lang.bookTitle}
+                          </span>
+                          {isActive && <Check className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400 shrink-0" />}
+                        </div>
+                        <span className="text-[10px] text-stone-500 dark:text-stone-400">
+                          {lang.available ? `${lang.hymnCount} hymns · ${lang.englishName}` : 'Upcoming edition'}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -1625,15 +1753,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </button>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSendWhatsAppFeedback}
+                      <a
+                        href={whatsAppFeedbackUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="px-3.5 py-2 rounded-xl border border-emerald-600/30 hover:border-emerald-600 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 bg-white dark:bg-stone-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
                         title="Send feedback via WhatsApp (+260771500266)"
                       >
                         <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>WhatsApp (+260771500266)</span>
-                      </button>
+                      </a>
                       <button
                         type="button"
                         onClick={handleSendEmailFeedback}
@@ -1732,14 +1861,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </button>
 
                     {/* WhatsApp */}
-                    <button
-                      type="button"
-                      onClick={handleShareWhatsApp}
+                    <a
+                      href={whatsAppShareUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="p-3 rounded-xl border border-emerald-600/30 hover:border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
                       <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Share on WhatsApp</span>
-                    </button>
+                    </a>
                   </div>
                 </div>
 
@@ -1865,7 +1995,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <span>8. About Kristu Mu Nyimbo</span>
                   </label>
                   <span className="px-2 py-0.5 rounded-md bg-amber-900/10 dark:bg-amber-400/10 text-amber-900 dark:text-amber-400 font-mono text-[10px] font-bold">
-                    v2.5.0 PWA
+                    v3.0 PWA
                   </span>
                 </div>
 
@@ -1881,7 +2011,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                        <span>About Kristu Mu Nyimbo & User Guide</span>
+                        <span>About Kristu Mu Nyimbo &amp; User Guide</span>
                       </div>
                       <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate mt-0.5">
                         {isAboutExpanded ? 'Tap to hide app overview and navigation guide' : 'Tap to read app overview, navigation guide & credits'}
@@ -1907,20 +2037,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             Kristu Mu Nyimbo
                           </h3>
                           <span className="px-2 py-0.5 rounded-md bg-amber-900/10 dark:bg-amber-400/10 text-amber-900 dark:text-amber-400 font-mono text-[10px] font-bold shrink-0">
-                            v2.5.0 PWA
+                            v3.0 PWA
                           </span>
                         </div>
                         <p className="text-[11px] text-amber-800 dark:text-amber-400 font-medium">
-                          Seventh-day Adventist Church • Bemba Hymnal
+                          Seventh-day Adventist Multi-Language Hymnal &amp; Holy Bible
                         </p>
                         <p className="text-[10px] text-stone-400 mt-0.5">
-                          Zambia Union Conference Publications
+                          Icibemba (311) · Chitonga (341) · Chichewa (350) · KJV / ESV / GNT
                         </p>
                       </div>
                     </div>
 
                     <p className="text-[11px] sm:text-xs leading-relaxed text-stone-600 dark:text-stone-400">
-                      Kristu Mu Nyimbo is the official digital edition of the Seventh-day Adventist Hymnal in the Bemba language of Zambia. It is designed to assist believers in Sabbath worship, congregational singing, Bible study, and private family devotions. Fully offline with zero internet required.
+                      Kristu Mu Nyimbo brings together the Seventh-day Adventist hymnal editions in Icibemba, Chitonga, and Chichewa (with Kiikaonde upcoming) paired with English lyrics and the Holy Bible (KJV, ESV, and Good News Bible) in one fast, offline-ready worship companion.
                     </p>
 
                     {/* HOW TO NAVIGATE THE APP (DETAILED USER GUIDE) */}
@@ -1934,50 +2064,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         {/* Step 1: Search & Fast Dialpad */}
                         <div className="p-3.5 rounded-xl bg-white dark:bg-stone-900/70 border border-stone-200/80 dark:border-stone-700/60 space-y-1">
                           <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                            <span>1. Search & Numeric Dialpad</span>
+                            <span>1. Search &amp; 6-Dots Dialpad</span>
                           </div>
                           <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
-                            Enter any hymn number (e.g. <strong>7</strong>), Bemba lyric snippet, or song title in the top search bar. Or tap the <strong>6-dots / Dialpad (#)</strong> button on the top bar or bottom navigation for instant 10-key numeric keypad jumping.
+                            Search by hymn number, local or English title, or lyric phrase in the top search bar, or tap the <strong>6-dots</strong> keypad icon for instant number jumping.
                           </p>
                         </div>
 
-                        {/* Step 2: Hymn Reader Controls */}
+                        {/* Step 2: Dual & Single-Language Reading */}
                         <div className="p-3.5 rounded-xl bg-white dark:bg-stone-900/70 border border-stone-200/80 dark:border-stone-700/60 space-y-1">
                           <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                            <span>2. Reading & Typography</span>
+                            <span>2. Dual &amp; Centered Reading</span>
                           </div>
                           <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
-                            Tap any hymn to open the full-screen reader. Tap <strong>A+ / A-</strong> to change text size, tap the <strong>Theme</strong> icon to toggle night sanctuary mode, and choose between <strong>Lora Serif</strong> and <strong>Modern Sans</strong> typography.
+                            Toggle <strong>Dual</strong> (side-by-side local &amp; English) or center a single language cleanly in the middle. Adjust size (<strong>A+ / A-</strong>), theme, <strong>Lora Serif / Modern Sans</strong>, and Projector Bold mode.
                           </p>
                         </div>
 
-                        {/* Step 3: Page Navigation & Swiping */}
+                        {/* Step 3: Multi-Language Hymnals */}
                         <div className="p-3.5 rounded-xl bg-white dark:bg-stone-900/70 border border-stone-200/80 dark:border-stone-700/60 space-y-1">
                           <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                            <span>3. Flipping Hymns (Prev / Next)</span>
+                            <span>3. Choose Language</span>
                           </div>
                           <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
-                            Inside the reader, tap <strong>Previous Hymn</strong> or <strong>Next Hymn</strong> at the bottom bar to flip sequentially through songs. On a laptop or computer keyboard, use the <strong>← and → arrow keys</strong>.
+                            Open the <strong>3-lines menu</strong> and tap <strong>Choose Language</strong> (or use Settings) to switch between Icibemba (311), Chitonga (341), and Chichewa (350), with Kiikaonde upcoming.
                           </p>
                         </div>
 
-                        {/* Step 4: Auto-Scroll & Melodies */}
+                        {/* Step 4: Holy Bible (KJV, ESV, Good News) */}
                         <div className="p-3.5 rounded-xl bg-white dark:bg-stone-900/70 border border-stone-200/80 dark:border-stone-700/60 space-y-1">
                           <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                            <span>4. Hands-Free Scroll & Tunes</span>
+                            <span>4. Holy Bible &amp; Verse Highlighting</span>
                           </div>
                           <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
-                            Tap <strong>Scroll</strong> to start smooth auto-scrolling while singing or playing an instrument. Tap <strong>Tune</strong> to listen to melodic audio previews for rehearsals, church song leaders, and choir practice.
+                            Switch between <strong>KJV</strong>, <strong>ESV</strong>, and <strong>Good News (GNT)</strong> across all 66 books. Tap up to 10 verses to mark, highlight in color, copy, or share.
                           </p>
                         </div>
 
                         {/* Step 5: Favorites & Sabbath Planner */}
                         <div className="p-3.5 rounded-xl bg-white dark:bg-stone-900/70 border border-stone-200/80 dark:border-stone-700/60 space-y-1 sm:col-span-2">
                           <div className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                            <span>5. Favorites & Sabbath Service Planner</span>
+                            <span>5. Favorites (Amalumbo) &amp; Sabbath Planner (Ipepo)</span>
                           </div>
                           <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
-                            Tap the bookmark ribbon on any hymn card or reader toolbar to save it to your <strong>Favorites</strong> list. Open the <strong>Service Planner</strong> tab to assemble Sabbath worship setlists (prelude, opening hymn, scripture hymn, and closing benediction).
+                            Bookmark any hymn to save it under <strong>Amalumbo</strong>, or open <strong>Ipepo</strong> to organize Sabbath service songs (prelude, opening hymn, scripture song, and closing benediction).
                           </p>
                         </div>
                       </div>
@@ -1986,13 +2116,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     {/* Credits & Acknowledgements */}
                     <div className="pt-3 border-t border-stone-200/80 dark:border-stone-700/80 space-y-1.5 text-[11px]">
                       <div className="font-semibold text-stone-900 dark:text-stone-100">
-                        Credits & Acknowledgements:
+                        Credits &amp; Acknowledgements:
                       </div>
                       <ul className="space-y-1 text-stone-600 dark:text-stone-400 pl-2">
-                        <li>• <strong>Publisher:</strong> Seventh-day Adventist Church — Zambia Union Conference Publications</li>
-                        <li>• <strong>Bemba Translations:</strong> [Translators & Hymnal Review Committee: Zambia Union Conference Publications — Placeholder]</li>
-                        <li>• <strong>Music & Melodies:</strong> Traditional Christian Hymnal Tunes (Church Copyrights & Public Domain)</li>
-                        <li>• <strong>Application Engineering:</strong> [Digital Worship Ministry & PWA Software Team Placeholder]</li>
+                        <li>• <strong>Hymnal Sources:</strong> Seventh-day Adventist Church publications (Icibemba, Chitonga &amp; Chichewa editions)</li>
+                        <li>• <strong>Scripture Translations:</strong> King James Version (KJV), English Standard Version (ESV) &amp; Good News Bible (GNT)</li>
+                        <li>• <strong>Music &amp; Melodies:</strong> Traditional Christian hymnal tunes and Sabbath worship arrangements</li>
                       </ul>
                     </div>
 
@@ -2024,7 +2153,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <section className="bg-white dark:bg-stone-900/80 rounded-2xl p-4 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
                 <label className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-2">
                   <Shield className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                  <span>9. Privacy & Legal</span>
+                  <span>9. Privacy &amp; Legal</span>
                 </label>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -2055,7 +2184,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex items-center justify-between text-xs font-bold text-stone-900 dark:text-stone-100 mb-1">
                       <span className="flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />
-                        Terms & Conditions
+                        Terms &amp; Conditions
                       </span>
                       <ChevronRight className={`w-3.5 h-3.5 text-stone-400 transition-transform ${legalView === 'terms' ? 'rotate-90' : ''}`} />
                     </div>
@@ -2075,13 +2204,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      1. <strong>Local Storage Only:</strong> The Kristu Mu Nyimbo application operates completely offline and does not store your name, email, or personal identity on external servers. All user preferences, favorites, and recent history are saved locally on your device via IndexedDB.
+                      1. <strong>Local Storage Only:</strong> Kristu Mu Nyimbo operates offline and does not collect or transmit personal identity information. Preferences, favorites, Bible highlights, and recent history remain stored locally on your device.
                     </p>
                     <p className="text-[11px] leading-relaxed">
-                      2. <strong>Zero Tracking:</strong> No analytics or tracking scripts monitor your personal reading or worship habits.
-                    </p>
-                    <p className="text-[10px] text-stone-400 italic">
-                      [Official Legal Privacy Policy: Standard Seventh-day Adventist Media Privacy Policy Placeholder]
+                      2. <strong>Zero Tracking:</strong> No third-party analytics or tracking scripts monitor your worship reading habits.
                     </p>
                   </div>
                 )}
@@ -2089,19 +2215,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {legalView === 'terms' && (
                   <div className="p-4 sm:p-5 rounded-2xl bg-stone-50 dark:bg-stone-900/90 border border-stone-200 dark:border-stone-700 text-xs text-stone-700 dark:text-stone-300 space-y-2 animate-in fade-in">
                     <div className="flex items-center justify-between font-bold text-stone-900 dark:text-stone-100">
-                      <span>Terms & Conditions</span>
+                      <span>Terms &amp; Conditions</span>
                       <button type="button" onClick={() => setLegalView(null)} className="text-stone-400 hover:text-stone-600">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      1. <strong>Spiritual Use:</strong> All hymns and musical arrangements are provided solely for Christian worship, Sabbath School, missionary outreach, and personal devotion.
+                      1. <strong>Spiritual Use:</strong> All hymns, scriptures, and musical arrangements are provided for Christian worship, Sabbath School, fellowship, and personal devotion.
                     </p>
                     <p className="text-[11px] leading-relaxed">
-                      2. <strong>Intellectual Property:</strong> Hymn lyrics, musical scores, and denominational emblems remain the intellectual property of their respective creators and the Seventh-day Adventist Church.
-                    </p>
-                    <p className="text-[10px] text-stone-400 italic">
-                      [Terms & Conditions: Standard Seventh-day Adventist Publications Worship Guidelines Placeholder]
+                      2. <strong>Intellectual Property:</strong> Hymn lyrics, Scripture translations, and denominational emblems remain the property of their respective copyright holders and church publications.
                     </p>
                   </div>
                 )}
@@ -2118,7 +2241,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span>10. Reset Preferences</span>
                 </div>
                 <div className="text-[11px] text-stone-500 dark:text-stone-400">
-                  Restore all appearance, typography, line spacing, and reading settings back to defaults
+                  Restore theme, typography, line spacing, Bible version, and reading options back to defaults
                 </div>
               </div>
 

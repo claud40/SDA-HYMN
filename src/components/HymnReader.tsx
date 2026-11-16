@@ -913,20 +913,20 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
               );
             }
 
-            // Single column layout (either Cibemba or English only)
+            // Single column layout (Bemba only, Tonga/Chewa only, or English only) — centered in the middle
             const activeVerses = lyricsLang === 'english' && hymn.englishVerses ? hymn.englishVerses : hymn.verses;
             const activeChorus = lyricsLang === 'english' ? (hymn.englishChorus || null) : hymn.chorus;
             const activeChorusLabel = lyricsLang === 'english' ? 'Chorus' : (hymn.chorusLabel || 'Chibwekesho');
 
             return (
-              <div className="space-y-4 sm:space-y-5">
+              <div className="space-y-6 sm:space-y-7 text-center">
                 {activeVerses.map((verseLines, verseIndex) => (
                   <React.Fragment key={`verse-${verseIndex}`}>
-                    {/* Regular Verse */}
-                    <div className="flex items-start gap-3 sm:gap-4">
+                    {/* Regular Verse — Centered */}
+                    <div className="flex flex-col items-center text-center">
                       {/* Verse Number Stamp */}
                       <div
-                        className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all ${themeStyles.verseNum}`}
+                        className={`mb-2.5 shrink-0 rounded-full flex items-center justify-center font-bold transition-all ${themeStyles.verseNum}`}
                         style={{
                           width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
                           height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
@@ -939,7 +939,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
                       {/* Verse Lyrics */}
                       <div
-                        className="flex-1 pt-0.5 transition-all"
+                        className="w-full transition-all"
                         style={{
                           fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].versePx}px`,
                           lineHeight: TYPOGRAPHY_CONFIG.lineSpacing[lineSpacing].multiplier,
@@ -962,12 +962,12 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                       </div>
                     </div>
 
-                    {/* Chorus rendered after the 1st verse (traditional hymnal arrangement) */}
+                    {/* Chorus rendered after the 1st verse (traditional hymnal arrangement) — Centered */}
                     {activeChorus && verseIndex === 0 && (
                       <div
-                        className={`my-3 sm:my-4 p-3.5 sm:p-4 rounded-xl ${themeStyles.chorusBg}`}
+                        className={`my-3 sm:my-4 p-4 sm:p-5 rounded-xl text-center ${themeStyles.chorusBg}`}
                       >
-                        <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-400">
+                        <div className="text-xs uppercase tracking-wider font-sans mb-2 font-bold flex items-center justify-center gap-1.5 text-amber-900 dark:text-amber-400">
                           <span>{activeChorusLabel}</span>
                         </div>
                         <div

@@ -282,6 +282,12 @@ export default function App() {
         favorites={favorites}
         recentHymns={recentHymns}
         allHymns={hymns}
+        activeLanguage={activeLanguage}
+        onSelectLanguage={handleSelectLanguage}
+        onOpenBible={() => {
+          setActiveTab('bible');
+          setIsSettingsOpen(false);
+        }}
         onSelectHymn={(hymn) => {
           handleOpenHymn(hymn);
           setIsSettingsOpen(false);
