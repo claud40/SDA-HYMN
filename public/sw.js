@@ -4,7 +4,7 @@
  * without requiring an internet connection.
  */
 
-const CACHE_NAME = 'kristu-mu-nyimbo-v2';
+const CACHE_NAME = 'kristu-mu-nyimbo-v4';
 
 const PRECACHE_ASSETS = [
   '/',

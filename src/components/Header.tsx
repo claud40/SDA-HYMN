@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, Music, Hash, BookOpen, Bookmark, Calendar, ChevronRight, Download, Search, Settings } from 'lucide-react';
+import { X, Music, BookOpen, Bookmark, Calendar, ChevronRight, Download, Search, Settings, Globe, BookMarked } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { CATEGORIES_LIST } from '../data/hymns';
+import { HymnalLanguageId, getHymnalLanguageConfig } from '../data/languages';
 import { AdventistLogo } from './AdventistLogo';
 import { MAX_SEARCH_LENGTH } from '../utils/searchSanitizer';
 
 interface HeaderProps {
-  activeTab: 'catalog' | 'topics' | 'favorites' | 'service';
-  onSelectTab: (tab: 'catalog' | 'topics' | 'favorites' | 'service') => void;
+  activeTab: 'catalog' | 'topics' | 'favorites' | 'service' | 'bible';
+  onSelectTab: (tab: 'catalog' | 'topics' | 'favorites' | 'service' | 'bible') => void;
   onOpenDialpad: () => void;
   onOpenSettings?: () => void;
+  onOpenChooseLanguage?: () => void;
+  activeLanguage?: HymnalLanguageId;
   favoritesCount: number;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -21,11 +24,14 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectTab,
   onOpenDialpad,
   onOpenSettings,
+  onOpenChooseLanguage,
+  activeLanguage = 'bemba',
   favoritesCount,
   searchQuery,
   onSearchChange,
   onSelectCategory,
 }) => {
+  const activeLangConfig = getHymnalLanguageConfig(activeLanguage);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
@@ -57,13 +63,8 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [isMenuOpen]);
 
-  const handleNavClick = (tab: 'catalog' | 'topics' | 'favorites' | 'service') => {
+  const handleNavClick = (tab: 'catalog' | 'topics' | 'favorites' | 'service' | 'bible') => {
     onSelectTab(tab);
-    setIsMenuOpen(false);
-  };
-
-  const handleDialpadClick = () => {
-    onOpenDialpad();
     setIsMenuOpen(false);
   };
 
@@ -156,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="w-6 h-6 sm:w-7 sm:h-7 p-0.5 rounded-lg bg-white shadow-xs border border-amber-500/25 shrink-0 flex items-center justify-center">
                   <AdventistLogo className="w-full h-full" />
                 </div>
-                <span className="truncate">Kristu Mu Nyimbo</span>
+                <span className="truncate">{activeLangConfig.bookTitle}</span>
               </button>
             </div>
 
@@ -200,12 +201,6 @@ export const Header: React.FC<HeaderProps> = ({
                 Inyimbo
               </button>
               <button
-                onClick={handleDialpadClick}
-                className="whitespace-nowrap shrink-0 transition-colors py-1 hover:text-stone-900 dark:hover:text-stone-200"
-              >
-                Nambala
-              </button>
-              <button
                 onClick={() => handleNavClick('topics')}
                 className={`whitespace-nowrap shrink-0 transition-colors py-1 ${
                   activeTab === 'topics'
@@ -241,14 +236,14 @@ export const Header: React.FC<HeaderProps> = ({
                 Ipepo
               </button>
               <button
-                type="button"
-                onClick={onOpenSettings}
-                className="whitespace-nowrap shrink-0 transition-colors py-1 flex items-center gap-1.5 hover:text-stone-900 dark:hover:text-stone-200"
-                title="Settings"
-                aria-label="Settings"
+                onClick={() => handleNavClick('bible')}
+                className={`whitespace-nowrap shrink-0 transition-colors py-1 ${
+                  activeTab === 'bible'
+                    ? 'text-amber-900 dark:text-amber-400 border-b-2 border-amber-800 dark:border-amber-500 font-semibold'
+                    : 'hover:text-stone-900 dark:hover:text-stone-200'
+                }`}
               >
-                <Settings className="w-4 h-4" />
-                <span>Settings</span>
+                Bible
               </button>
             </nav>
 
@@ -305,12 +300,13 @@ export const Header: React.FC<HeaderProps> = ({
       {isMenuOpen && (
         <div className="border-t border-stone-200 dark:border-stone-800 bg-[#FAF8F5] dark:bg-stone-950 shadow-xl transition-all">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-            <div className="text-xs uppercase tracking-wider text-amber-900 dark:text-amber-400 font-semibold mb-3 px-2 flex items-center justify-end">
-              <span className="text-[11px] text-stone-400 font-normal">SDA Bemba Hymnal</span>
+            <div className="text-xs uppercase tracking-wider text-amber-900 dark:text-amber-400 font-semibold mb-3 px-2 flex items-center justify-between gap-2">
+              <span>{activeLangConfig.bookTitle} · {activeLangConfig.label}</span>
+              <span className="text-[11px] text-stone-400 font-normal">SDA Hymnal &amp; Holy Bible</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {/* Line 1: Inyimbo (All Hymns) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {/* Button 1: Inyimbo (All Hymns) */}
               <button
                 type="button"
                 onClick={() => handleNavClick('catalog')}
@@ -327,13 +323,65 @@ export const Header: React.FC<HeaderProps> = ({
                     <Music className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate">Inyimbo (All Hymns)</div>
+                    <div className="text-sm font-semibold truncate">Hymns ({activeLangConfig.label})</div>
+                    <div className={`text-xs truncate ${activeTab === 'catalog' ? 'text-amber-100' : 'text-stone-500 dark:text-stone-400'}`}>
+                      {activeLangConfig.bookTitle} · {activeLangConfig.hymnCount}
+                    </div>
                   </div>
                 </div>
                 <ChevronRight className={`w-4 h-4 shrink-0 ${activeTab === 'catalog' ? 'text-amber-200' : 'text-stone-400'}`} />
               </button>
 
-              {/* Line 2: Search by category */}
+              {/* Button 2: Choose Language (for Hymns) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenChooseLanguage?.();
+                }}
+                className="w-full text-left p-3 rounded-xl border bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:border-amber-700/50 transition-all flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-stone-100 dark:bg-stone-800 text-amber-900 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold truncate">Choose Language</div>
+                    <div className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                      Active: {activeLangConfig.label} ({activeLangConfig.englishName})
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-stone-400 shrink-0" />
+              </button>
+
+              {/* Button 3: Bible (KJV) */}
+              <button
+                type="button"
+                onClick={() => handleNavClick('bible')}
+                className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all ${
+                  activeTab === 'bible'
+                    ? 'bg-amber-900 text-white border-amber-900 shadow-sm'
+                    : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:border-amber-700/50'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    activeTab === 'bible' ? 'bg-amber-800 text-white' : 'bg-stone-100 dark:bg-stone-800 text-amber-900 dark:text-amber-400'
+                  }`}>
+                    <BookMarked className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold truncate">Holy Bible</div>
+                    <div className={`text-xs truncate ${activeTab === 'bible' ? 'text-amber-100' : 'text-stone-500 dark:text-stone-400'}`}>
+                      KJV · ESV · Good News · 66 Books
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className={`w-4 h-4 shrink-0 ${activeTab === 'bible' ? 'text-amber-200' : 'text-stone-400'}`} />
+              </button>
+
+              {/* Button 4: Search by category */}
               <button
                 type="button"
                 onClick={() => handleNavClick('topics')}
@@ -356,7 +404,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <ChevronRight className={`w-4 h-4 shrink-0 ${activeTab === 'topics' ? 'text-amber-200' : 'text-stone-400'}`} />
               </button>
 
-              {/* Line 3: Amalumbo (Favorites) */}
+              {/* Button 5: Amalumbo (Favorites) */}
               <button
                 type="button"
                 onClick={() => handleNavClick('favorites')}
@@ -386,7 +434,30 @@ export const Header: React.FC<HeaderProps> = ({
                 <ChevronRight className={`w-4 h-4 shrink-0 ${activeTab === 'favorites' ? 'text-amber-200' : 'text-stone-400'}`} />
               </button>
 
-              {/* Line 4: Settings */}
+              {/* Button 6: Ipepo (Sabbath Service Planner) */}
+              <button
+                type="button"
+                onClick={() => handleNavClick('service')}
+                className={`w-full text-left p-3 rounded-xl border flex items-center justify-between transition-all ${
+                  activeTab === 'service'
+                    ? 'bg-amber-900 text-white border-amber-900 shadow-sm'
+                    : 'bg-white dark:bg-stone-900 border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 hover:border-amber-700/50'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    activeTab === 'service' ? 'bg-amber-800 text-white' : 'bg-stone-100 dark:bg-stone-800 text-amber-900 dark:text-amber-400'
+                  }`}>
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold truncate">Ipepo (Service Plan)</div>
+                  </div>
+                </div>
+                <ChevronRight className={`w-4 h-4 shrink-0 ${activeTab === 'service' ? 'text-amber-200' : 'text-stone-400'}`} />
+              </button>
+
+              {/* Button 7: Settings */}
               <button
                 type="button"
                 onClick={() => {

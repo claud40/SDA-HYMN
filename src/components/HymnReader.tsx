@@ -42,6 +42,7 @@ interface HymnReaderProps {
   hasPrev: boolean;
   hasNext: boolean;
   totalHymnsCount: number;
+  languageLabel?: string;
 }
 
 type ReaderTheme = 'parchment' | 'white' | 'dark';
@@ -58,6 +59,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
   hasPrev,
   hasNext,
   totalHymnsCount,
+  languageLabel = 'Cibemba',
 }) => {
   const [textSize, setTextSize] = useState<TextSize>(() => {
     return getStoredTypography().textSize;
@@ -715,7 +717,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                       : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
                   }`}
                 >
-                  Cibemba
+                  {languageLabel}
                 </button>
                 <button
                   type="button"
@@ -736,7 +738,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
               <div className="hidden md:grid grid-cols-2 gap-8 text-left mt-4 pt-3 border-t border-stone-200/50 dark:border-stone-800/70">
                 <div className="pl-11">
                   <span className="text-[11px] font-sans uppercase font-bold tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-1.5">
-                    <span>Cibemba (Left)</span>
+                    <span>{languageLabel} (Left)</span>
                   </span>
                 </div>
                 <div>
@@ -786,7 +788,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                               }}
                             >
                               <div className="md:hidden text-[10px] font-sans uppercase font-bold tracking-wider text-amber-900/80 dark:text-amber-400/80 mb-1">
-                                Cibemba
+                                {languageLabel}
                               </div>
                               {bembaLines.map((line, lineIndex) => (
                                 <p

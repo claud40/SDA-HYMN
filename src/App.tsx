@@ -12,6 +12,9 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { SettingsModal } from './components/SettingsModal';
 import { SplashScreen } from './components/SplashScreen';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { BibleReader } from './components/BibleReader';
+import { ChooseLanguageModal } from './components/ChooseLanguageModal';
+import { getHymnalLanguageConfig } from './data/languages';
 import { applyThemeToDOM, getStoredThemePreference } from './utils/theme';
 import { applyTypographyToDOM, getStoredTypography } from './utils/typography';
 import { sanitizeSearchQuery, matchHymnByQuery, MAX_SEARCH_LENGTH } from './utils/searchSanitizer';
@@ -20,8 +23,8 @@ export default function App() {
   // Opening splash screen (disabled by default so hymnal opens immediately)
   const [showSplash, setShowSplash] = useState<boolean>(false);
 
-  // Navigation tabs: 'catalog' | 'topics' | 'favorites' | 'service'
-  const [activeTab, setActiveTab] = useState<'catalog' | 'topics' | 'favorites' | 'service'>('catalog');
+  // Navigation tabs: 'catalog' | 'topics' | 'favorites' | 'service' | 'bible'
+  const [activeTab, setActiveTab] = useState<'catalog' | 'topics' | 'favorites' | 'service' | 'bible'>('catalog');
 
   // Search & Filtering
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -36,6 +39,9 @@ export default function App() {
 
   // Settings modal
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
+  // Choose hymnal language modal
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState<boolean>(false);
 
   // Typography settings state for app-wide reactive rendering
   const [typography, setTypography] = useState(() => getStoredTypography());
@@ -60,6 +66,9 @@ export default function App() {
   // Native IndexedDB storage for hymns, favorites, and recent history
   const {
     hymns,
+    activeLanguage,
+    isLoadingLanguage,
+    switchLanguage,
     favorites,
     recentHymns,
     toggleFavorite,
@@ -69,6 +78,15 @@ export default function App() {
     importHymns,
     reloadHymns,
   } = useHymnalDB();
+
+  const handleSelectLanguage = async (lang: typeof activeLanguage) => {
+    await switchLanguage(lang);
+    setActiveHymn(null);
+    setSelectedCategory('all');
+    if (activeTab === 'bible') {
+      setActiveTab('catalog');
+    }
+  };
 
   const handleOpenHymn = (hymn: Hymn) => {
     setActiveHymn(hymn);
@@ -137,29 +155,46 @@ export default function App() {
     setActiveTab('catalog');
   };
 
+  useEffect(() => {
+    if (activeTab === 'bible') {
+      window.scrollTo({ top: 0 });
+    }
+  }, [activeTab]);
+
   return (
-    <div className="min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-hymn-sans pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-8 overflow-x-hidden">
-      {/* Top Bar Header strictly following 3-Zone Top Bar Contract */}
-      {/* Top Bar Header with Search & 8-dots button on same line as Kristu Mu Nyimbo */}
-      <Header
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        onOpenDialpad={() => setIsDialpadOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        favoritesCount={favorites.length}
-        searchQuery={searchQuery}
-        onSearchChange={handleSearchChange}
-        onSelectCategory={(categoryId) => {
-          setSelectedCategory(categoryId);
-          setActiveTab('catalog');
-        }}
-      />
+    <div className={`min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-hymn-sans overflow-x-hidden ${activeTab === 'bible' ? 'pb-8' : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-8'}`}>
+      {/* Top Bar Header strictly following 3-Zone Top Bar Contract (hidden in focused Bible reader view) */}
+      {activeTab !== 'bible' && (
+        <Header
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          onOpenDialpad={() => setIsDialpadOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenChooseLanguage={() => setIsLanguageModalOpen(true)}
+          activeLanguage={activeLanguage}
+          favoritesCount={favorites.length}
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          onSelectCategory={(categoryId) => {
+            setSelectedCategory(categoryId);
+            setActiveTab('catalog');
+          }}
+        />
+      )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <main
+        className={
+          activeTab === 'bible'
+            ? 'flex-1 w-full px-0 py-0'
+            : 'flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8'
+        }
+      >
 
-        {/* View Switcher: Catalog vs Topics vs Favorites vs Service */}
-        {activeTab === 'service' ? (
+        {/* View Switcher: Catalog vs Topics vs Favorites vs Service vs Bible */}
+        {activeTab === 'bible' ? (
+          <BibleReader onBackToHymns={() => setActiveTab('catalog')} />
+        ) : activeTab === 'service' ? (
           <SabbathServicePlanner onSelectHymn={handleOpenHymn} allHymns={hymns} />
         ) : activeTab === 'topics' ? (
           <TopicsIndex
@@ -225,6 +260,7 @@ export default function App() {
           hasPrev={hasPrev}
           hasNext={hasNext}
           totalHymnsCount={hymns.length}
+          languageLabel={getHymnalLanguageConfig(activeLanguage).label}
         />
       )}
 
@@ -261,14 +297,25 @@ export default function App() {
         onSyncStaticJSON={reloadHymns}
       />
 
-      {/* Mobile-First Bottom Navigation Bar */}
-      <MobileBottomNav
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        onOpenDialpad={() => setIsDialpadOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        favoritesCount={favorites.length}
+      {/* Choose Hymnal Language Modal */}
+      <ChooseLanguageModal
+        isOpen={isLanguageModalOpen}
+        activeLanguage={activeLanguage}
+        isLoading={isLoadingLanguage}
+        onSelectLanguage={handleSelectLanguage}
+        onClose={() => setIsLanguageModalOpen(false)}
       />
+
+      {/* Mobile-First Bottom Navigation Bar */}
+      {activeTab !== 'bible' && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          onOpenDialpad={() => setIsDialpadOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          favoritesCount={favorites.length}
+        />
+      )}
 
       {/* App Opening Screen with Seventh-day Adventist Logo */}
       {showSplash && (

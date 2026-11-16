@@ -2,8 +2,8 @@ import React from 'react';
 import { BookOpen, Hash, Bookmark, Calendar, Music, Settings } from 'lucide-react';
 
 interface MobileBottomNavProps {
-  activeTab: 'catalog' | 'topics' | 'favorites' | 'service';
-  onSelectTab: (tab: 'catalog' | 'topics' | 'favorites' | 'service') => void;
+  activeTab: 'catalog' | 'topics' | 'favorites' | 'service' | 'bible';
+  onSelectTab: (tab: 'catalog' | 'topics' | 'favorites' | 'service' | 'bible') => void;
   onOpenDialpad: () => void;
   onOpenSettings?: () => void;
   favoritesCount: number;
