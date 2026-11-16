@@ -704,9 +704,9 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                       ? 'bg-amber-900 text-white shadow-xs font-bold'
                       : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
                   }`}
-                  title="Side-by-side dual language (Bemba on left, English on right)"
+                  title="Dual language (local & English side-by-side)"
                 >
-                  Side-by-Side (Dual)
+                  Dual
                 </button>
                 <button
                   type="button"
