@@ -111,7 +111,7 @@ export default function App() {
       }
       return a.title.localeCompare(b.title);
     });
-  }, [searchQuery, selectedCategory, sortBy, activeTab, favorites]);
+  }, [hymns, searchQuery, selectedCategory, sortBy, activeTab, favorites]);
 
   // Reader Prev / Next Navigation Handlers
   const currentHymnIndex = activeHymn
