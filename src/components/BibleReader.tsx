@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   BookOpen,
   Search,
@@ -176,6 +176,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
   const [showBookPicker, setShowBookPicker] = useState<boolean>(false);
   const [testamentFilter, setTestamentFilter] = useState<'all' | 'ot' | 'nt'>('all');
+  const highlightedVerseRef = useRef<HTMLDivElement | null>(null);
 
   const versionInfo = useMemo(
     () => BIBLE_VERSIONS.find((v) => v.id === selectedVersion) || BIBLE_VERSIONS[0],
@@ -255,6 +256,15 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const safeChapterIdx =
     currentBook && chapterIdx < currentBook.chapters.length ? chapterIdx : 0;
   const currentVerses = currentBook ? currentBook.chapters[safeChapterIdx] || [] : [];
+
+  // Smoothly scroll jumped/searched verse into view once chapter renders
+  useEffect(() => {
+    if (isLoading || searchResults || highlightedVerse === null) return;
+    const rafId = requestAnimationFrame(() => {
+      highlightedVerseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [highlightedVerse, bookIdx, safeChapterIdx, isLoading, searchResults]);
 
   const handleSelectBook = (idx: number) => {
     setBookIdx(idx);
@@ -762,6 +772,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               return (
                 <div
                   key={verseNum}
+                  ref={isJumpHighlighted ? highlightedVerseRef : undefined}
                   className={`rounded-xl transition-colors ${rowBgClass} ${
                     isSelected ? 'ring-1 ring-amber-800/45 dark:ring-amber-400/50' : ''
                   }`}

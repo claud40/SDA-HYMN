@@ -130,3 +130,82 @@ export const applyTypographyToDOM = (settings: TypographySettings) => {
     })
   );
 };
+
+export type ColumnSpacingPreference = 'very-tight' | 'tight' | 'medium' | 'wide' | 'very-wide';
+
+export const COLUMN_SPACING_CONFIG: Record<
+  ColumnSpacingPreference,
+  {
+    label: string;
+    desc: string;
+    gapPx: number;
+    maxWidth: string;
+  }
+> = {
+  'very-tight': {
+    label: 'Very Tight',
+    desc: 'Compact',
+    gapPx: 12,
+    maxWidth: '42rem',
+  },
+  tight: {
+    label: 'Tight',
+    desc: 'Close',
+    gapPx: 20,
+    maxWidth: '48rem',
+  },
+  medium: {
+    label: 'Medium',
+    desc: 'Default',
+    gapPx: 36,
+    maxWidth: '58rem',
+  },
+  wide: {
+    label: 'Wide',
+    desc: 'Spacious',
+    gapPx: 56,
+    maxWidth: '68rem',
+  },
+  'very-wide': {
+    label: 'Very Wide',
+    desc: 'Broad',
+    gapPx: 84,
+    maxWidth: '78rem',
+  },
+};
+
+const COLUMN_SPACING_STORAGE_KEY = 'hymnal_dual_column_spacing';
+
+export const getStoredColumnSpacing = (): ColumnSpacingPreference => {
+  if (typeof window === 'undefined') return 'medium';
+  try {
+    const saved = localStorage.getItem(COLUMN_SPACING_STORAGE_KEY) as ColumnSpacingPreference | null;
+    if (saved && saved in COLUMN_SPACING_CONFIG) {
+      return saved;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return 'medium';
+};
+
+export const applyColumnSpacing = (spacing: ColumnSpacingPreference) => {
+  const cfg = COLUMN_SPACING_CONFIG[spacing] || COLUMN_SPACING_CONFIG.medium;
+  if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--hymn-dual-gap', `${cfg.gapPx}px`);
+    document.documentElement.style.setProperty('--hymn-dual-max-width', cfg.maxWidth);
+    document.documentElement.dataset.hymnColumnSpacing = spacing;
+  }
+  try {
+    localStorage.setItem(COLUMN_SPACING_STORAGE_KEY, spacing);
+  } catch {
+    // ignore storage errors
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('hymnal-settings-change', {
+        detail: { columnSpacing: spacing },
+      })
+    );
+  }
+};

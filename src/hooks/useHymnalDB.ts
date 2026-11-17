@@ -157,6 +157,11 @@ export function useHymnalDB() {
     setRecentHymns(updated);
   }, []);
 
+  const clearRecentHistory = useCallback(async () => {
+    await hymnalDB.clearRecentHistory();
+    setRecentHymns([]);
+  }, []);
+
   const saveHymn = useCallback(
     async (candidate: unknown) => {
       const result = await hymnalDB.saveHymn(candidate);
@@ -213,6 +218,7 @@ export function useHymnalDB() {
     isDBReady,
     toggleFavorite,
     recordRecentHymn,
+    clearRecentHistory,
     saveHymn,
     deleteHymn,
     importHymns,

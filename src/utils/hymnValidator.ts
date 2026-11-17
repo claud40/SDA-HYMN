@@ -126,7 +126,9 @@ export function validateHymnRecord(candidate: unknown): HymnValidationResult {
     ? raw.scripture.trim()
     : 'Amalumbo';
 
-  const cleanChorusLabel = typeof raw.chorusLabel === 'string' ? raw.chorusLabel.trim() : 'Icililishi (Chorus)';
+  const cleanChorusLabel = typeof raw.chorusLabel === 'string' && raw.chorusLabel.trim().length > 0
+    ? raw.chorusLabel.trim().replace(/:$/, '')
+    : 'Chibwekesho';
 
   // Safe MIDI melodic preview
   let melodicPreview: number[] | undefined;

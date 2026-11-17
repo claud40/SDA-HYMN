@@ -28,6 +28,9 @@ import {
   TextSizePreference as TextSize,
   LineSpacingPreference,
   FontPreference,
+  ColumnSpacingPreference,
+  COLUMN_SPACING_CONFIG,
+  getStoredColumnSpacing,
 } from '../utils/typography';
 
 interface HymnReaderProps {
@@ -73,7 +76,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
     const currIdx = list.indexOf(lineSpacing);
     const next = list[(currIdx + 1) % list.length];
     setLineSpacing(next);
-    applyTypographyToDOM({ textSize, lineSpacing: next, fontFamily: fontPref });
+    applyTypographyToDOM({ textSize, lineSpacing: next, fontFamily: fontPref, isBold: isBoldText });
   };
   const [theme, setTheme] = useState<ReaderTheme>(() => {
     const saved = localStorage.getItem('hymnal_reader_theme') as ReaderTheme;
@@ -91,6 +94,15 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isAutoScrolling, setIsAutoScrolling] = useState<boolean>(() => {
     return localStorage.getItem('hymnal_autoscroll_enabled') === 'true';
+  });
+  const [autoScrollSpeed, setAutoScrollSpeed] = useState<string>(() => {
+    return localStorage.getItem('hymnal_autoscroll_speed') || 'normal';
+  });
+  const [keepScreenAwake, setKeepScreenAwake] = useState<boolean>(() => {
+    return localStorage.getItem('hymnal_wake_lock') === 'true';
+  });
+  const [columnSpacing, setColumnSpacing] = useState<ColumnSpacingPreference>(() => {
+    return getStoredColumnSpacing();
   });
   const [lyricsLang, setLyricsLang] = useState<'side-by-side' | 'bemba' | 'english'>(() => {
     return hymn.englishVerses && hymn.englishVerses.length > 0 ? 'side-by-side' : 'bemba';
@@ -130,6 +142,15 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
       if (typeof e.detail?.autoScrollEnabled === 'boolean') {
         setIsAutoScrolling(e.detail.autoScrollEnabled);
       }
+      if (typeof e.detail?.autoScrollSpeed === 'string') {
+        setAutoScrollSpeed(e.detail.autoScrollSpeed);
+      }
+      if (typeof e.detail?.keepScreenAwake === 'boolean') {
+        setKeepScreenAwake(e.detail.keepScreenAwake);
+      }
+      if (e.detail?.columnSpacing && e.detail.columnSpacing in COLUMN_SPACING_CONFIG) {
+        setColumnSpacing(e.detail.columnSpacing as ColumnSpacingPreference);
+      }
     };
     window.addEventListener('hymnal-typography-change', handleTypographyChange);
     window.addEventListener('hymnal-settings-change', handleTypographyChange);
@@ -141,8 +162,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
   // Keep screen awake while reading (Wake Lock API)
   useEffect(() => {
-    const shouldWakeLock = localStorage.getItem('hymnal_wake_lock') === 'true';
-    if (!shouldWakeLock || typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+    if (!keepScreenAwake || typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
 
     let lockSentinel: any = null;
     (navigator as any).wakeLock
@@ -157,14 +177,13 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
         lockSentinel.release().catch(() => {});
       }
     };
-  }, []);
+  }, [keepScreenAwake]);
 
   // Auto-scroll animation frame loop
   useEffect(() => {
     if (!isAutoScrolling) return;
 
-    const speedSetting = localStorage.getItem('hymnal_autoscroll_speed') || 'normal';
-    const speedPxPerFrame = speedSetting === 'slow' ? 0.35 : speedSetting === 'fast' ? 1.0 : 0.6;
+    const speedPxPerFrame = autoScrollSpeed === 'slow' ? 0.35 : autoScrollSpeed === 'fast' ? 1.0 : 0.6;
 
     let animId: number;
     const step = () => {
@@ -181,7 +200,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
     animId = requestAnimationFrame(step);
     return () => cancelAnimationFrame(animId);
-  }, [isAutoScrolling]);
+  }, [isAutoScrolling, autoScrollSpeed]);
 
   // Reset scroll to the top whenever a new hymn is opened or navigated
   useEffect(() => {
@@ -652,7 +671,14 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 pt-3 pb-8 sm:pt-5 sm:pb-10"
       >
-        <div className={lyricsLang === 'side-by-side' ? "max-w-5xl mx-auto" : "max-w-2xl mx-auto"}>
+        <div
+          className={lyricsLang === 'side-by-side' ? 'mx-auto w-full transition-all' : 'max-w-2xl mx-auto'}
+          style={
+            lyricsLang === 'side-by-side'
+              ? { maxWidth: (COLUMN_SPACING_CONFIG[columnSpacing] || COLUMN_SPACING_CONFIG.medium).maxWidth }
+              : undefined
+          }
+        >
           {/* Hymn Header Block */}
           <div className="text-center pb-4 border-b border-stone-200/60 dark:border-stone-800 mb-4 sm:mb-5">
             {/* Hymn Number */}
@@ -735,16 +761,28 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
             {/* Side-by-side Column Header indicator */}
             {lyricsLang === 'side-by-side' && (
-              <div className="hidden md:grid grid-cols-2 gap-8 text-left mt-4 pt-3 border-t border-stone-200/50 dark:border-stone-800/70">
-                <div className="pl-11">
-                  <span className="text-[11px] font-sans uppercase font-bold tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-1.5">
-                    <span>{languageLabel} (Left)</span>
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] font-sans uppercase font-bold tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-1.5">
-                    <span>English (Right)</span>
-                  </span>
+              <div className="hidden md:flex items-center gap-3 sm:gap-4 text-left mt-4 pt-3 border-t border-stone-200/50 dark:border-stone-800/70">
+                <div
+                  className="shrink-0"
+                  style={{ width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px` }}
+                  aria-hidden="true"
+                />
+                <div
+                  className="flex-1 grid grid-cols-2"
+                  style={{
+                    columnGap: `${(COLUMN_SPACING_CONFIG[columnSpacing] || COLUMN_SPACING_CONFIG.medium).gapPx}px`,
+                  }}
+                >
+                  <div>
+                    <span className="text-[11px] font-sans uppercase font-bold tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-1.5">
+                      <span>{languageLabel} (Left)</span>
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-sans uppercase font-bold tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-1.5">
+                      <span>English (Right)</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -754,6 +792,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
           {(() => {
             if (lyricsLang === 'side-by-side' && hymn.englishVerses && hymn.englishVerses.length > 0) {
               const maxVerses = Math.max(hymn.verses.length, hymn.englishVerses.length);
+              const dualGapPx = (COLUMN_SPACING_CONFIG[columnSpacing] || COLUMN_SPACING_CONFIG.medium).gapPx;
 
               return (
                 <div className="space-y-4 sm:space-y-6">
@@ -778,7 +817,10 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                           </div>
 
                           {/* Dual Columns: Bemba on Left, English on Right */}
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 pt-0.5">
+                          <div
+                            className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-y-4 pt-0.5 transition-all"
+                            style={{ columnGap: `${dualGapPx}px` }}
+                          >
                             {/* Left Column: Bemba */}
                             <div
                               style={{
@@ -837,11 +879,14 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                         {/* Chorus after 1st verse */}
                         {(hymn.chorus || hymn.englishChorus) && verseIndex === 0 && (
                           <div className={`my-3 sm:my-5 p-3.5 sm:p-5 rounded-xl ${themeStyles.chorusBg}`}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                            <div
+                              className="grid grid-cols-1 md:grid-cols-2 gap-y-4 transition-all"
+                              style={{ columnGap: `${dualGapPx}px` }}
+                            >
                               {/* Left: Bemba Chibwekesho */}
                               <div>
                                 <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-400">
-                                  <span>{hymn.chorusLabel || 'Chibwekesho'}</span>
+                                  <span>{(hymn.chorusLabel || 'Chibwekesho').replace(/:$/, '')}</span>
                                 </div>
                                 {hymn.chorus ? (
                                   <div
@@ -916,7 +961,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
             // Single column layout (Bemba only, Tonga/Chewa only, or English only) — centered in the middle
             const activeVerses = lyricsLang === 'english' && hymn.englishVerses ? hymn.englishVerses : hymn.verses;
             const activeChorus = lyricsLang === 'english' ? (hymn.englishChorus || null) : hymn.chorus;
-            const activeChorusLabel = lyricsLang === 'english' ? 'Chorus' : (hymn.chorusLabel || 'Chibwekesho');
+            const activeChorusLabel = lyricsLang === 'english' ? 'Chorus' : (hymn.chorusLabel || 'Chibwekesho').replace(/:$/, '');
 
             return (
               <div className="space-y-6 sm:space-y-7 text-center">

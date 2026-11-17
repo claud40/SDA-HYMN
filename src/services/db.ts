@@ -357,7 +357,7 @@ class HymnalIndexedDB {
     }
   }
 
-  async getRecentHymns(limit = 6): Promise<RecentHymnRecord[]> {
+  async getRecentHymns(limit = 20): Promise<RecentHymnRecord[]> {
     try {
       const db = await this.openDB();
       return new Promise((resolve) => {
@@ -373,6 +373,21 @@ class HymnalIndexedDB {
       });
     } catch {
       return [];
+    }
+  }
+
+  async clearRecentHistory(): Promise<boolean> {
+    try {
+      const db = await this.openDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction('recentHistory', 'readwrite');
+        const store = tx.objectStore('recentHistory');
+        store.clear();
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      });
+    } catch {
+      return false;
     }
   }
 

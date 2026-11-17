@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen } from 'lucide-react';
-import { SAMPLE_HYMNS, Hymn } from './data/hymns';
+import { BookOpen, X } from 'lucide-react';
+import { SAMPLE_HYMNS, Hymn, CATEGORIES_LIST } from './data/hymns';
 import { useHymnalDB } from './hooks/useHymnalDB';
 import { Header } from './components/Header';
 import { HymnCard } from './components/HymnCard';
@@ -73,6 +73,7 @@ export default function App() {
     recentHymns,
     toggleFavorite,
     recordRecentHymn,
+    clearRecentHistory,
     saveHymn,
     deleteHymn,
     importHymns,
@@ -131,6 +132,16 @@ export default function App() {
     });
   }, [hymns, searchQuery, selectedCategory, sortBy, activeTab, favorites]);
 
+  const activeFavoritesCount = useMemo(
+    () => hymns.filter((h) => favorites.includes(h.id)).length,
+    [hymns, favorites]
+  );
+
+  const activeCategoryInfo = useMemo(
+    () => (selectedCategory !== 'all' ? CATEGORIES_LIST.find((c) => c.id === selectedCategory) || null : null),
+    [selectedCategory]
+  );
+
   // Reader Prev / Next Navigation Handlers
   const currentHymnIndex = activeHymn
     ? hymns.findIndex((h) => h.id === activeHymn.id)
@@ -172,7 +183,7 @@ export default function App() {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenChooseLanguage={() => setIsLanguageModalOpen(true)}
           activeLanguage={activeLanguage}
-          favoritesCount={favorites.length}
+          favoritesCount={activeFavoritesCount}
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           onSelectCategory={(categoryId) => {
@@ -204,6 +215,26 @@ export default function App() {
           />
         ) : (
           <section>
+            {activeTab === 'catalog' && activeCategoryInfo && (
+              <div className="mb-4 px-4 py-3 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-amber-900 dark:text-amber-400">
+                    Category {activeCategoryInfo.number} · {activeCategoryInfo.name}
+                  </div>
+                  <div className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                    {activeCategoryInfo.bemba} ({filteredHymns.length} {filteredHymns.length === 1 ? 'hymn' : 'hymns'})
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory('all')}
+                  className="shrink-0 h-8 px-3 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-xs font-medium text-stone-700 dark:text-stone-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>All Hymns</span>
+                </button>
+              </div>
+            )}
 
             {/* Hymn Cards Grid */}
             {filteredHymns.length > 0 ? (
@@ -296,6 +327,7 @@ export default function App() {
           setActiveTab('favorites');
           setIsSettingsOpen(false);
         }}
+        onClearRecentHistory={clearRecentHistory}
         onShowSplashScreen={() => setShowSplash(true)}
         onSaveHymn={saveHymn}
         onImportHymns={importHymns}
@@ -319,7 +351,7 @@ export default function App() {
           onSelectTab={setActiveTab}
           onOpenDialpad={() => setIsDialpadOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
-          favoritesCount={favorites.length}
+          favoritesCount={activeFavoritesCount}
         />
       )}
 

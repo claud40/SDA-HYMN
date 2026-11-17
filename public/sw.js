@@ -4,7 +4,7 @@
  * without requiring an internet connection.
  */
 
-const CACHE_NAME = 'kristu-mu-nyimbo-v4';
+const CACHE_NAME = 'kristu-mu-nyimbo-v5';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -15,6 +15,8 @@ const PRECACHE_ASSETS = [
   '/adventist-logo.png',
   '/assets/aistudio/image_0ecea644.png',
   '/data/hymns.json',
+  '/data/hymnals/tonga.json',
+  '/data/hymnals/chewa.json',
 ];
 
 // Precache essential application shell on install

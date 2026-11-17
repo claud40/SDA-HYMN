@@ -44,8 +44,6 @@ export const AddHymnModal: React.FC<AddHymnModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   // Parse raw text into structured stanzas (separated by 1 or more blank lines)
   const parsedVerses: string[][] = useMemo(() => {
     if (!versesText.trim()) return [];
@@ -69,6 +67,8 @@ export const AddHymnModal: React.FC<AddHymnModalProps> = ({
       .filter((l) => l.length > 0);
     return lines.length > 0 ? lines : null;
   }, [chorusText]);
+
+  if (!isOpen) return null;
 
   const selectedCategoryObj = CATEGORIES_LIST.find((c) => c.id === categoryId) || CATEGORIES_LIST[0];
 
@@ -112,7 +112,7 @@ export const AddHymnModal: React.FC<AddHymnModalProps> = ({
       scripture: scripture.trim() || 'Amalumbo',
       verses: parsedVerses,
       chorus: parsedChorus,
-      chorusLabel: 'Icililishi (Chorus)',
+      chorusLabel: 'Chibwekesho',
       isSample: false, // Mark as real hymn!
     };
 

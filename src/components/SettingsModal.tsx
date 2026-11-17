@@ -61,6 +61,10 @@ import {
   TextSizePreference as DefaultTextSize,
   LineSpacingPreference,
   FontPreference as DefaultFontFamily,
+  ColumnSpacingPreference,
+  COLUMN_SPACING_CONFIG,
+  getStoredColumnSpacing,
+  applyColumnSpacing,
 } from '../utils/typography';
 
 export type { ThemePreference, DefaultTextSize, DefaultFontFamily, LineSpacingPreference };
@@ -135,6 +139,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   });
   const [isBoldText, setIsBoldText] = useState<boolean>(() => {
     return localStorage.getItem('hymnal_bold_text') === 'true';
+  });
+  const [columnSpacing, setColumnSpacing] = useState<ColumnSpacingPreference>(() => {
+    return getStoredColumnSpacing();
   });
 
   const activeLangConfig = getHymnalLanguageConfig(activeLanguage);
@@ -220,6 +227,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setLineSpacing((localStorage.getItem('hymnal_line_spacing') as LineSpacingPreference) || 'relaxed');
       setDefaultFontFamily((localStorage.getItem('hymnal_font_family') as DefaultFontFamily) || 'serif');
       setIsBoldText(localStorage.getItem('hymnal_bold_text') === 'true');
+      setColumnSpacing(getStoredColumnSpacing());
       setBibleVersion(localStorage.getItem('hymnal_bible_version') || 'kjv');
       setBibleHighlightCount(getStoredBibleHighlightCount());
       setAutoScrollEnabled(localStorage.getItem('hymnal_autoscroll_enabled') === 'true');
@@ -315,6 +323,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     showFeedback(next ? 'Projector Bold Mode enabled (Amalembo yakosa)' : 'Normal text weight restored');
   };
 
+  // Column Spacing (Dual Side-by-Side Mode)
+  const handleSelectColumnSpacing = (spacing: ColumnSpacingPreference) => {
+    setColumnSpacing(spacing);
+    applyColumnSpacing(spacing);
+    showFeedback(
+      `Column spacing set to: ${COLUMN_SPACING_CONFIG[spacing].label} (${COLUMN_SPACING_CONFIG[spacing].desc})`
+    );
+  };
+
   // Hymnal Language & Bible Preferences
   const handleSelectHymnalLanguage = async (langId: HymnalLanguageId) => {
     const cfg = getHymnalLanguageConfig(langId);
@@ -376,9 +393,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   // Clear recent history
-  const handleClearHistory = () => {
+  const handleClearHistory = async () => {
     if (onClearRecentHistory) {
-      onClearRecentHistory();
+      await onClearRecentHistory();
+    } else {
+      await hymnalDB.clearRecentHistory();
     }
     try {
       localStorage.removeItem('KristuMuNyimbo_recentHistory');
@@ -396,21 +415,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  // Reset Preferences Action
+  // Reset Preferences Action (atomic reset to avoid stale React state overwrites)
   const handleConfirmReset = () => {
-    handleSelectTheme('light');
-    handleSelectTextSize('large');
-    handleSelectLineSpacing('relaxed');
-    handleSelectFontFamily('serif');
+    setThemePref('light');
+    applyThemeToDOM('light');
+    try {
+      localStorage.removeItem('hymnal_reader_theme');
+    } catch {}
+
+    setDefaultTextSize('large');
+    setLineSpacing('relaxed');
+    setDefaultFontFamily('serif');
     setIsBoldText(false);
-    localStorage.setItem('hymnal_bold_text', 'false');
-    handleSelectBibleVersion('kjv');
+    applyTypographyToDOM({
+      textSize: 'large',
+      lineSpacing: 'relaxed',
+      fontFamily: 'serif',
+      isBold: false,
+    });
+
+    setColumnSpacing('medium');
+    applyColumnSpacing('medium');
+
+    setBibleVersion('kjv');
+    try {
+      localStorage.setItem('hymnal_bible_version', 'kjv');
+    } catch {}
+    window.dispatchEvent(new CustomEvent('hymnal-bible-settings-change'));
+
     setAutoScrollEnabled(false);
-    localStorage.setItem('hymnal_autoscroll_enabled', 'false');
     setAutoScrollSpeed('normal');
-    localStorage.setItem('hymnal_autoscroll_speed', 'normal');
     setKeepScreenAwake(false);
-    localStorage.setItem('hymnal_wake_lock', 'false');
+    try {
+      localStorage.setItem('hymnal_autoscroll_enabled', 'false');
+      localStorage.setItem('hymnal_autoscroll_speed', 'normal');
+      localStorage.setItem('hymnal_wake_lock', 'false');
+    } catch {}
+    window.dispatchEvent(
+      new CustomEvent('hymnal-settings-change', {
+        detail: {
+          autoScrollEnabled: false,
+          autoScrollSpeed: 'normal',
+          keepScreenAwake: false,
+          columnSpacing: 'medium',
+        },
+      })
+    );
 
     setIsResetConfirmOpen(false);
     showFeedback('All preferences have been restored to default values');
@@ -958,6 +1008,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
 
+                {/* Column Spacing (Dual Side-by-Side) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-stone-800 dark:text-stone-200">
+                      Column Spacing
+                    </span>
+                    <span className="text-[11px] text-stone-500 font-mono">
+                      {COLUMN_SPACING_CONFIG[columnSpacing].label}
+                      {columnSpacing === 'medium' ? ' (Default)' : ''}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mb-2">
+                    Horizontal space between the two language columns when reading hymns side by side
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {(
+                      [
+                        { id: 'very-tight', label: 'Very Tight', desc: 'Compact' },
+                        { id: 'tight', label: 'Tight', desc: 'Close' },
+                        { id: 'medium', label: 'Medium', desc: 'Default' },
+                        { id: 'wide', label: 'Wide', desc: 'Spacious' },
+                        { id: 'very-wide', label: 'Very Wide', desc: 'Broad' },
+                      ] as const
+                    ).map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleSelectColumnSpacing(item.id)}
+                        className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                          columnSpacing === item.id
+                            ? 'border-amber-800 bg-amber-900 text-white font-bold shadow-xs'
+                            : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:border-amber-700/40'
+                        }`}
+                      >
+                        <div className="text-xs">{item.label}</div>
+                        <div className={`text-[10px] ${columnSpacing === item.id ? 'text-amber-200' : 'text-stone-400'}`}>
+                          {item.desc}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Font Family Choice */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl bg-stone-50/80 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-800 gap-2">
                   <div>
@@ -1241,7 +1334,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         Favorite Hymns
                       </div>
                       <div className="text-[11px] text-stone-500 dark:text-stone-400">
-                        You have {favorites.length} saved hymns in your collection
+                        {(() => {
+                          const activeFavCount = allHymns.filter((h) => favorites.includes(h.id)).length;
+                          return `You have ${activeFavCount} saved ${activeFavCount === 1 ? 'hymn' : 'hymns'} in ${activeLangConfig.label}`;
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1258,6 +1354,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {/* Recently Viewed Hymns */}
+                {(() => {
+                  const activeRecentRecords = recentHymns.filter((record) =>
+                    allHymns.some((h) => h.id === record.hymnId)
+                  );
+                  return (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
@@ -1277,10 +1378,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     )}
                   </div>
 
-                  {recentHymns && recentHymns.length > 0 ? (
+                  {activeRecentRecords.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {recentHymns.slice(0, 4).map((record) => {
-                        const fullHymn = allHymns.find((h) => h.id === record.hymnId || h.number === record.number);
+                      {activeRecentRecords.slice(0, 4).map((record) => {
+                        const fullHymn = allHymns.find((h) => h.id === record.hymnId);
                         return (
                           <button
                             key={record.hymnId}
@@ -1307,7 +1408,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   ) : (
                     <p className="text-xs text-stone-400 dark:text-stone-500 italic p-3 rounded-xl bg-stone-50 dark:bg-stone-800/30 border border-stone-200/50 dark:border-stone-800/50">
-                      No recently viewed hymns recorded yet.
+                      No recently viewed hymns recorded yet for {activeLangConfig.label}.
                     </p>
                   )}
                   {/* Holy Bible Preferences (Default Translation & Verse Highlights) */}
@@ -1383,6 +1484,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   </div>
                 </div>
+                  );
+                })()}
               </section>
             )}
 
