@@ -74,10 +74,6 @@ export default function App() {
     toggleFavorite,
     recordRecentHymn,
     clearRecentHistory,
-    saveHymn,
-    deleteHymn,
-    importHymns,
-    reloadHymns,
   } = useHymnalDB();
 
   const handleSelectLanguage = async (lang: typeof activeLanguage) => {
@@ -329,10 +325,6 @@ export default function App() {
         }}
         onClearRecentHistory={clearRecentHistory}
         onShowSplashScreen={() => setShowSplash(true)}
-        onSaveHymn={saveHymn}
-        onImportHymns={importHymns}
-        onDeleteHymn={deleteHymn}
-        onSyncStaticJSON={reloadHymns}
       />
 
       {/* Choose Hymnal Language Modal */}

@@ -1,6 +1,6 @@
 import React, { Component, ReactNode, ErrorInfo } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
+import { SiteRouter } from './SiteRouter.tsx';
 import './index.css';
 
 // Register Service Worker for offline hymnal access and reopening
@@ -85,7 +85,7 @@ if (container) {
   const root = createRoot(container);
   root.render(
     <RootErrorBoundary>
-      <App />
+      <SiteRouter />
     </RootErrorBoundary>
   );
 }

@@ -37,18 +37,12 @@ import {
   Gift,
   ThumbsUp,
   Phone,
-  Database,
-  Upload,
-  Download,
-  RefreshCw,
-  Plus
 } from 'lucide-react';
 import { Hymn, SAMPLE_HYMNS } from '../data/hymns';
 import { HYMNAL_LANGUAGES, HymnalLanguageId, getHymnalLanguageConfig } from '../data/languages';
 import { BIBLE_VERSIONS } from './BibleReader';
 import { AdventistLogo } from './AdventistLogo';
 import { hymnalDB } from '../services/db';
-import { AddHymnModal } from './AddHymnModal';
 import { sanitizePlainText, sanitizeHymnNumber } from '../utils/searchSanitizer';
 import {
   applyThemeToDOM,
@@ -84,13 +78,9 @@ export interface SettingsModalProps {
   onViewFavorites?: () => void;
   onClearRecentHistory?: () => void;
   onShowSplashScreen?: () => void;
-  onSaveHymn?: (hymn: unknown) => Promise<{ success: boolean; hymn?: Hymn; error?: string }>;
-  onImportHymns?: (candidates: unknown[]) => Promise<{ importedCount: number; rejectedCount: number; duplicateCount: number; totalHymns: number }>;
-  onDeleteHymn?: (hymnId: string) => Promise<boolean>;
-  onSyncStaticJSON?: () => Promise<unknown>;
 }
 
-type SettingsTab = 'all' | 'appearance' | 'reading' | 'preferences' | 'database' | 'feedback' | 'support' | 'about';
+type SettingsTab = 'all' | 'appearance' | 'reading' | 'preferences' | 'feedback' | 'support' | 'about';
 
 function getStoredBibleHighlightCount(): number {
   try {
@@ -116,10 +106,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onViewFavorites,
   onClearRecentHistory,
   onShowSplashScreen,
-  onSaveHymn,
-  onImportHymns,
-  onDeleteHymn: _onDeleteHymn,
-  onSyncStaticJSON,
 }) => {
   // Active settings section tab for easy navigation
   const [activeTab, setActiveTab] = useState<SettingsTab>('all');
@@ -569,7 +555,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       `App: Kristu Mu Nyimbo — Multi-Language SDA Hymnal & Holy Bible (v3.0 PWA)\n` +
       `Seventh-day Adventist Church • Zambia Union Conference Publications`
     );
-    window.location.href = `mailto:worship@kristumunyimbo.adventist.org.zm?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:fidelintyintergrity@gmail.com?subject=${subject}&body=${body}`;
   };
 
   // Build safe WhatsApp URLs without window.open
@@ -637,70 +623,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => setIsCopiedSupport(false), 2500);
   };
 
-  // Database & Hymn Management State
-  const [isAddHymnOpen, setIsAddHymnOpen] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const jsonFileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleExportJSON = () => {
-    try {
-      const jsonStr = JSON.stringify(allHymns, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `kristu_mu_nyimbo_backup_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showFeedback(`Database exported successfully (${allHymns.length} hymns)!`);
-    } catch {
-      showFeedback('Failed to export hymnal data.');
-    }
-  };
-
-  const handleImportJSONFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const text = event.target?.result as string;
-        const parsed = JSON.parse(text);
-        if (Array.isArray(parsed)) {
-          if (onImportHymns) {
-            const res = await onImportHymns(parsed);
-            showFeedback(`Imported ${res.importedCount} hymns into IndexedDB! Total: ${res.totalHymns}`);
-          } else {
-            const res = await hymnalDB.importHymns(parsed);
-            showFeedback(`Imported ${res.importedCount} hymns into IndexedDB! Total: ${res.totalHymns}`);
-          }
-        } else {
-          showFeedback('Error: JSON file must contain an array of hymns.');
-        }
-      } catch {
-        showFeedback('Failed to read or parse JSON file.');
-      } finally {
-        if (jsonFileInputRef.current) jsonFileInputRef.current.value = '';
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleSyncStaticJSON = async () => {
-    setIsSyncing(true);
-    try {
-      const res = await hymnalDB.fetchAndSyncStaticHymns();
-      if (onSyncStaticJSON) await onSyncStaticJSON();
-      showFeedback(`Synced with /data/hymns.json (${res.importedCount} new hymns added, total: ${res.totalHymns})`);
-    } catch {
-      showFeedback('Sync completed.');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
   if (!isOpen) return null;
 
   const categories = [
@@ -708,7 +630,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: 'appearance', label: 'Appearance & Text', icon: Sun },
     { id: 'reading', label: 'Reading Options', icon: BookOpen },
     { id: 'preferences', label: 'My Preferences', icon: Bookmark },
-    { id: 'database', label: 'Database & Ingest', icon: Database },
     { id: 'feedback', label: 'Feedback & Rating', icon: MessageSquare },
     { id: 'support', label: 'Share & Support Us', icon: Heart },
     { id: 'about', label: 'About & User Guide', icon: Sparkles },
@@ -1489,120 +1410,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </section>
             )}
 
-            {/* ========================================================
-                SECTION: DATABASE & REAL HYMN INGESTION
-               ======================================================== */}
-            {(activeTab === 'all' || activeTab === 'database') && (
-              <section className="bg-white dark:bg-stone-900/80 rounded-2xl p-4 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-400 flex items-center gap-2">
-                    <Database className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                    <span>Hymnal Database &amp; Content Management</span>
-                  </label>
-                  <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <Check className="w-3 h-3" />
-                    <span>Offline Storage Ready</span>
-                  </span>
-                </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400">
-                  Manage the {activeLangConfig.englishName} ({activeLangConfig.bookTitle}) catalog, add custom hymns into IndexedDB, import structured JSON datasets, or export backup files.
-                </p>
-
-                {/* Database Metrics Card */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Active Hymnal ({activeLangConfig.label})</div>
-                    <div className="text-lg font-bold font-mono text-stone-900 dark:text-stone-100 mt-0.5">
-                      {allHymns.length} <span className="text-xs font-sans font-normal text-stone-500">hymns</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Bible Translations</div>
-                    <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5" />
-                      <span>KJV · ESV · GNT (66 Books)</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-700">
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 uppercase font-semibold">Hymnal Editions</div>
-                    <div className="text-xs font-bold text-stone-800 dark:text-stone-200 mt-1">
-                      Bemba · Tonga · Chewa
-                    </div>
-                  </div>
-                </div>
-
-                {/* Primary Action: Add Hymn 1 by 1 */}
-                <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-600/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-amber-900 text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Plus className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
-                        Lundeniko Nyimbo Ipyani (Add Real Hymn 1 by 1)
-                      </h4>
-                      <p className="text-[11px] text-stone-600 dark:text-stone-400">
-                        Add a hymn with verses, chorus, and tune details directly into local IndexedDB storage.
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsAddHymnOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Lundeniko (Add Hymn)</span>
-                  </button>
-                </div>
-
-                {/* Secondary Actions: Import, Export, Sync */}
-                <div className="pt-2 border-t border-stone-200/80 dark:border-stone-800 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                  {/* Hidden File Input */}
-                  <input
-                    type="file"
-                    ref={jsonFileInputRef}
-                    onChange={handleImportJSONFile}
-                    accept=".json,application/json"
-                    className="hidden"
-                  />
-
-                  {/* Import Button */}
-                  <button
-                    type="button"
-                    onClick={() => jsonFileInputRef.current?.click()}
-                    className="p-3 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center gap-2 font-medium transition-colors cursor-pointer"
-                  >
-                    <Upload className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                    <span>Import JSON File</span>
-                  </button>
-
-                  {/* Export Button */}
-                  <button
-                    type="button"
-                    onClick={handleExportJSON}
-                    className="p-3 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center gap-2 font-medium transition-colors cursor-pointer"
-                  >
-                    <Download className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                    <span>Export Backup (JSON)</span>
-                  </button>
-
-                  {/* Sync Button */}
-                  <button
-                    type="button"
-                    onClick={handleSyncStaticJSON}
-                    disabled={isSyncing}
-                    className="p-3 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center justify-center gap-2 font-medium transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-4 h-4 text-amber-700 dark:text-amber-400 ${isSyncing ? 'animate-spin' : ''}`} />
-                    <span>{isSyncing ? 'Syncing...' : 'Sync Default Catalog'}</span>
-                  </button>
-                </div>
-              </section>
-            )}
 
             {/* ========================================================
                 SECTION 5: HYMNAL LANGUAGE SELECTION
@@ -1870,7 +1677,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="button"
                         onClick={handleSendEmailFeedback}
                         className="px-3.5 py-2 rounded-xl border border-stone-300 dark:border-stone-700 hover:border-amber-500 text-stone-700 dark:text-stone-300 hover:text-amber-900 dark:hover:text-amber-400 bg-white dark:bg-stone-900 text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5"
-                        title="Send directly to hymnal committee email"
+                        title="Send directly via email (fidelintyintergrity@gmail.com)"
                       >
                         <Mail className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
                         <span>Send via Email</span>
@@ -2405,29 +2212,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
       )}
 
-      {/* Add Hymn Modal for Real Hymn Ingestion */}
-      {isAddHymnOpen && (
-        <AddHymnModal
-          isOpen={isAddHymnOpen}
-          onClose={() => setIsAddHymnOpen(false)}
-          onSaveHymn={async (candidate) => {
-            if (onSaveHymn) {
-              const res = await onSaveHymn(candidate);
-              if (res.success && res.hymn && onSelectHymn) {
-                onSelectHymn(res.hymn);
-              }
-              return res;
-            } else {
-              const res = await hymnalDB.saveHymn(candidate);
-              if (res.success && res.hymn && onSelectHymn) {
-                onSelectHymn(res.hymn);
-              }
-              return res;
-            }
-          }}
-          existingNumbers={allHymns.map((h) => h.number)}
-        />
-      )}
     </div>
   );
 };

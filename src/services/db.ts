@@ -1,6 +1,5 @@
 import { Hymn, SAMPLE_HYMNS, WorshipProgramItem, DEFAULT_SABBATH_PROGRAM } from '../data/hymns';
 import {
-  validateHymnRecord,
   validateAndDeduplicateHymns,
   mergeWithDefaultHymns,
 } from '../utils/hymnValidator';
@@ -148,39 +147,10 @@ class HymnalIndexedDB {
   }
 
   /**
-   * Safely saves or updates a single hymn record.
-   * - Validates required fields (number, title, verses, choruses)
-   * - Preserves original Bemba spelling and verse order
-   * - Rejects corrupt or invalid objects
+   * Internal-only helper used by fetchAndSyncStaticHymns to sync the official
+   * bundled catalog into IndexedDB. Not exposed for user-initiated modifications.
    */
-  async saveHymn(candidate: unknown): Promise<{ success: boolean; hymn?: Hymn; error?: string }> {
-    const validation = validateHymnRecord(candidate);
-    if (!validation.isValid || !validation.hymn) {
-      return { success: false, error: validation.error || 'Invalid hymn record structure.' };
-    }
-
-    const hymn = validation.hymn;
-    try {
-      const db = await this.openDB();
-      return new Promise((resolve) => {
-        const tx = db.transaction('hymns', 'readwrite');
-        const store = tx.objectStore('hymns');
-        store.put(hymn);
-        tx.oncomplete = () => resolve({ success: true, hymn });
-        tx.onerror = () => resolve({ success: false, error: 'Database transaction failed.' });
-      });
-    } catch (err) {
-      return { success: false, error: (err as Error).message };
-    }
-  }
-
-  /**
-   * Safely imports and deduplicates a batch of hymns.
-   * - Prevents duplicate hymn numbers
-   * - Validates all required fields
-   * - Protects existing hymn integrity
-   */
-  async importHymns(candidates: unknown[]): Promise<{
+  private async importStaticHymns(candidates: unknown[]): Promise<{
     importedCount: number;
     rejectedCount: number;
     duplicateCount: number;
@@ -242,25 +212,6 @@ class HymnalIndexedDB {
   }
 
   /**
-   * Safely deletes a hymn from IndexedDB by ID.
-   */
-  async deleteHymn(hymnId: string): Promise<boolean> {
-    if (!hymnId || typeof hymnId !== 'string') return false;
-    try {
-      const db = await this.openDB();
-      return new Promise((resolve) => {
-        const tx = db.transaction('hymns', 'readwrite');
-        const store = tx.objectStore('hymns');
-        store.delete(hymnId);
-        tx.oncomplete = () => resolve(true);
-        tx.onerror = () => resolve(false);
-      });
-    } catch {
-      return false;
-    }
-  }
-
-  /**
    * Fetches static hymns catalog (/data/hymns.json) if available
    * and synchronizes new/updated hymns into IndexedDB.
    */
@@ -274,7 +225,7 @@ class HymnalIndexedDB {
       }
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        return await this.importHymns(data);
+        return await this.importStaticHymns(data);
       }
       const all = await this.getAllHymns();
       return { importedCount: 0, totalHymns: all.length };

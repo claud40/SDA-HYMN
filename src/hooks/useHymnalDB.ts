@@ -162,51 +162,6 @@ export function useHymnalDB() {
     setRecentHymns([]);
   }, []);
 
-  const saveHymn = useCallback(
-    async (candidate: unknown) => {
-      const result = await hymnalDB.saveHymn(candidate);
-      if (result.success && result.hymn && activeLanguage === 'bemba') {
-        const refreshed = await hymnalDB.getAllHymns();
-        languageCatalogCache.current.bemba = refreshed;
-        setHymns(refreshed);
-      }
-      return result;
-    },
-    [activeLanguage]
-  );
-
-  const deleteHymn = useCallback(
-    async (hymnId: string) => {
-      const success = await hymnalDB.deleteHymn(hymnId);
-      if (success && activeLanguage === 'bemba') {
-        const refreshed = await hymnalDB.getAllHymns();
-        languageCatalogCache.current.bemba = refreshed;
-        setHymns(refreshed);
-      }
-      return success;
-    },
-    [activeLanguage]
-  );
-
-  const importHymns = useCallback(
-    async (candidates: unknown[]) => {
-      const result = await hymnalDB.importHymns(candidates);
-      if (result.importedCount > 0 && activeLanguage === 'bemba') {
-        const refreshed = await hymnalDB.getAllHymns();
-        languageCatalogCache.current.bemba = refreshed;
-        setHymns(refreshed);
-      }
-      return result;
-    },
-    [activeLanguage]
-  );
-
-  const reloadHymns = useCallback(async () => {
-    const refreshed = await loadLanguageCatalog(activeLanguage);
-    setHymns(refreshed);
-    return refreshed;
-  }, [activeLanguage, loadLanguageCatalog]);
-
   return {
     hymns,
     activeLanguage,
@@ -219,9 +174,5 @@ export function useHymnalDB() {
     toggleFavorite,
     recordRecentHymn,
     clearRecentHistory,
-    saveHymn,
-    deleteHymn,
-    importHymns,
-    reloadHymns,
   };
 }
