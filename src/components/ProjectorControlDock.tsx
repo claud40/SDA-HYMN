@@ -53,8 +53,11 @@ export const ProjectorControlDock: React.FC<ProjectorControlDockProps> = ({
   );
 
   const liveSummary = (() => {
-    if (state.isBlank || state.kind === 'idle') {
-      return hasContent ? 'Standby (Screen Blank)' : 'Projector Ready — Select a verse or stanza';
+    if (state.isBlank) {
+      return 'Blank Screen · Creation Rotation';
+    }
+    if (state.kind === 'idle') {
+      return 'Projector Ready — Select a verse or stanza';
     }
     if (isBible && state.bible) {
       return `${state.bible.bookName} ${state.bible.chapterIdx + 1}:${state.bible.verseNum} ${state.bible.versionLabel}`;
@@ -165,9 +168,12 @@ export const ProjectorControlDock: React.FC<ProjectorControlDockProps> = ({
         <button
           type="button"
           onClick={() => setProjectorBlank(!state.isBlank)}
-          disabled={!hasContent && !state.isBlank}
-          title={state.isBlank ? 'Show slide on projector' : 'Blank projector screen'}
-          className={`h-8 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-40 ${
+          title={
+            state.isBlank
+              ? 'Return from Blank Creation Slideshow to active slide'
+              : 'Show rotating Creation scenes on projector'
+          }
+          className={`h-8 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
             state.isBlank
               ? 'bg-emerald-700 hover:bg-emerald-600 text-white'
               : 'bg-stone-800 hover:bg-stone-700 text-stone-200'

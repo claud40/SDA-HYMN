@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AdventistLogo } from './AdventistLogo';
 import type { LiveProjectorState } from '../utils/projectorBus';
 import {
@@ -6,6 +6,29 @@ import {
   type LineSpacingPreference,
   type TextSizePreference,
 } from '../utils/typography';
+
+const CREATION_SLIDES = [
+  {
+    src: '/assets/creation/01_river.jpg',
+    alt: 'Clear river flowing through sunlit forest and mossy rocks',
+  },
+  {
+    src: '/assets/creation/02_animals.jpg',
+    alt: 'Zebras standing peacefully in tall green savanna grass beneath trees',
+  },
+  {
+    src: '/assets/creation/03_forest.jpg',
+    alt: 'Golden sunbeams streaming through forest pine trees in morning mist',
+  },
+  {
+    src: '/assets/creation/04_pastures.jpg',
+    alt: 'Lush green grassy pastures and rolling hills beneath bright sky',
+  },
+  {
+    src: '/assets/creation/05_waterfall.jpg',
+    alt: 'Cascading waterfall into a clear forest pool surrounded by green foliage',
+  },
+] as const;
 
 interface ProjectorCanvasProps {
   state: LiveProjectorState;
@@ -149,12 +172,24 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
   onStepSlide,
 }) => {
   const touchStartXRef = useRef<number | null>(null);
+  const [blankSlideIdx, setBlankSlideIdx] = useState<number>(0);
   const { isDarkSlide, isBlank, kind } = state;
   const typography = state.typography || getStoredTypography();
   const fontClass = typography.fontFamily === 'serif' ? 'font-projector-serif' : 'font-projector-sans';
   const weightClass = typography.isBold ? 'font-bold' : 'font-normal';
   const leadingClass = getLeadingClass(typography.lineSpacing);
   const lineGapClass = getLineGapClass(typography.lineSpacing);
+
+  useEffect(() => {
+    if (!isBlank) {
+      setBlankSlideIdx(0);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setBlankSlideIdx((prev) => (prev + 1) % CREATION_SLIDES.length);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [isBlank]);
 
   useEffect(() => {
     if (!onRequestClose && !onStepSlide) return;
@@ -203,10 +238,35 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
   if (isBlank) {
     return (
       <div
-        className={wrapperClass}
+        className={`${
+          isFullViewport
+            ? 'fixed inset-0 z-[70] w-screen h-screen h-[100dvh]'
+            : 'relative w-full h-full'
+        } overflow-hidden bg-stone-950 select-none flex items-center justify-center`}
         onDoubleClick={onRequestClose}
-        aria-label="Projector Blank Screen"
-      />
+        aria-label="Projector Creation Slideshow"
+      >
+        {CREATION_SLIDES.map((slide, idx) => (
+          <img
+            key={slide.src}
+            src={slide.src}
+            alt={slide.alt}
+            referrerPolicy="no-referrer"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+              idx === blankSlideIdx ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/30 to-black/45" />
+        <div className="relative z-10 flex flex-col items-center justify-center px-8 text-center gap-4">
+          <div className="w-20 h-20 sm:w-28 sm:h-28 p-3 sm:p-4 rounded-3xl bg-white/90 backdrop-blur-sm shadow-2xl flex items-center justify-center">
+            <AdventistLogo className="w-full h-full" />
+          </div>
+          <h1 className="font-display text-2xl sm:text-4xl md:text-5xl font-bold tracking-wider text-white drop-shadow-lg">
+            Kristu mu Nyimbo
+          </h1>
+        </div>
+      </div>
     );
   }
 

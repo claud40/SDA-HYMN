@@ -54,16 +54,32 @@ export const ProjectorDisplayPage: React.FC = () => {
       }
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        sendHelloToOpener();
+        const stored = getLiveProjectorState();
+        setLiveState((prev) => (stored.updatedAt > prev.updatedAt ? stored : prev));
+      }
+    };
+
     window.addEventListener('hashchange', handleHashChange);
     window.addEventListener('message', handleOpenerMessage);
     window.addEventListener('focus', sendHelloToOpener);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     sendHelloToOpener();
+    const retryTimers = [
+      window.setTimeout(sendHelloToOpener, 150),
+      window.setTimeout(sendHelloToOpener, 600),
+      window.setTimeout(sendHelloToOpener, 1500),
+    ];
 
     return () => {
       unsubscribe();
       window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('message', handleOpenerMessage);
       window.removeEventListener('focus', sendHelloToOpener);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      retryTimers.forEach((id) => window.clearTimeout(id));
     };
   }, []);
 

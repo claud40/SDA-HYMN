@@ -4,7 +4,7 @@
  * without requiring an internet connection.
  */
 
-const CACHE_NAME = 'kristu-mu-nyimbo-v10';
+const CACHE_NAME = 'kristu-mu-nyimbo-v12';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -19,6 +19,11 @@ const PRECACHE_ASSETS = [
   '/sda-logo.svg',
   '/adventist-logo.png',
   '/assets/aistudio/image_0ecea644.png',
+  '/assets/creation/01_river.jpg',
+  '/assets/creation/02_animals.jpg',
+  '/assets/creation/03_forest.jpg',
+  '/assets/creation/04_pastures.jpg',
+  '/assets/creation/05_waterfall.jpg',
   '/data/hymns.json',
   '/data/hymnals/tonga.json',
   '/data/hymnals/chewa.json',
