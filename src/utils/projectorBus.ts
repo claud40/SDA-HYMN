@@ -1,4 +1,5 @@
 import type { Hymn } from '../data/hymns';
+import { getStoredTypography, type TypographySettings } from './typography';
 
 export type ProjectorLangMode = 'side-by-side' | 'bemba' | 'english';
 
@@ -41,21 +42,65 @@ export interface LiveProjectorState {
   isDarkSlide: boolean;
   bible?: LiveBiblePayload;
   hymn?: LiveHymnPayload;
+  typography?: TypographySettings;
   updatedAt: number;
 }
 
 const STORAGE_KEY = 'kristu_live_projector_state';
 const CHANNEL_NAME = 'kristu_projector_sync';
 const WINDOW_EVENT = 'kristu-projector-live-change';
+export const PROJECTOR_MSG_HELLO = 'kristu-projector-hello';
+export const PROJECTOR_MSG_STATE = 'kristu-projector-state';
 
 const DEFAULT_STATE: LiveProjectorState = {
   kind: 'idle',
   isBlank: false,
   isDarkSlide: false,
+  typography: { textSize: 'large', lineSpacing: 'relaxed', fontFamily: 'serif', isBold: false },
   updatedAt: 0,
 };
 
 let sharedChannel: BroadcastChannel | null = null;
+const connectedProjectorWindows = new Set<Window>();
+let bridgeInitialized = false;
+
+function ensureControlBridge() {
+  if (bridgeInitialized || typeof window === 'undefined') return;
+  bridgeInitialized = true;
+
+  window.addEventListener('message', (event: MessageEvent) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === PROJECTOR_MSG_HELLO && event.source && event.source !== window) {
+      const targetWin = event.source as Window;
+      connectedProjectorWindows.add(targetWin);
+      try {
+        targetWin.postMessage(
+          { type: PROJECTOR_MSG_STATE, state: getLiveProjectorState() },
+          window.location.origin
+        );
+      } catch {
+        connectedProjectorWindows.delete(targetWin);
+      }
+    }
+  });
+
+  window.addEventListener('hymnal-typography-change', (event: Event) => {
+    // Only push live updates from the control app (never from /projector itself)
+    if (window.location.pathname.startsWith('/projector')) return;
+    const detail = (event as CustomEvent<TypographySettings>).detail;
+    const nextTypo = detail || getStoredTypography();
+    const prev = getLiveProjectorState();
+    commitLiveState({
+      ...prev,
+      typography: nextTypo,
+      updatedAt: Date.now(),
+    });
+  });
+}
+
+if (typeof window !== 'undefined') {
+  ensureControlBridge();
+}
 
 function getChannel(): BroadcastChannel | null {
   if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') {
@@ -117,9 +162,10 @@ export function buildHymnSlides(hymn: Hymn): HymnSlide[] {
 
 export function getLiveProjectorState(): LiveProjectorState {
   if (typeof window === 'undefined') return DEFAULT_STATE;
+  const fallbackTypo = getStoredTypography();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_STATE;
+    if (!raw) return { ...DEFAULT_STATE, typography: fallbackTypo };
     const parsed = JSON.parse(raw) as LiveProjectorState;
     if (
       parsed &&
@@ -131,32 +177,48 @@ export function getLiveProjectorState(): LiveProjectorState {
         isDarkSlide: Boolean(parsed.isDarkSlide),
         bible: parsed.bible,
         hymn: parsed.hymn,
+        typography: parsed.typography || fallbackTypo,
         updatedAt: parsed.updatedAt || 0,
       };
     }
   } catch {
     // ignore storage parse errors
   }
-  return DEFAULT_STATE;
+  return { ...DEFAULT_STATE, typography: fallbackTypo };
 }
 
 function commitLiveState(next: LiveProjectorState): LiveProjectorState {
   if (typeof window === 'undefined') return next;
+  const stateWithTypo: LiveProjectorState = {
+    ...next,
+    typography: next.typography || getStoredTypography(),
+  };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stateWithTypo));
   } catch {
     // ignore quota errors
   }
   const ch = getChannel();
   if (ch) {
     try {
-      ch.postMessage(next);
+      ch.postMessage(stateWithTypo);
     } catch {
       // ignore closed channel
     }
   }
-  window.dispatchEvent(new CustomEvent(WINDOW_EVENT, { detail: next }));
-  return next;
+  connectedProjectorWindows.forEach((win) => {
+    try {
+      if (win.closed) {
+        connectedProjectorWindows.delete(win);
+        return;
+      }
+      win.postMessage({ type: PROJECTOR_MSG_STATE, state: stateWithTypo }, window.location.origin);
+    } catch {
+      connectedProjectorWindows.delete(win);
+    }
+  });
+  window.dispatchEvent(new CustomEvent(WINDOW_EVENT, { detail: stateWithTypo }));
+  return stateWithTypo;
 }
 
 export function subscribeLiveProjector(
@@ -374,6 +436,7 @@ export function encodeProjectorSnapshotHash(state: LiveProjectorState): string {
         kind: 'bible',
         isBlank: state.isBlank,
         isDarkSlide: state.isDarkSlide,
+        typography: state.typography || getStoredTypography(),
         updatedAt: state.updatedAt,
         bible: {
           bookIdx: state.bible.bookIdx,
@@ -395,6 +458,7 @@ export function encodeProjectorSnapshotHash(state: LiveProjectorState): string {
         kind: 'hymn',
         isBlank: state.isBlank,
         isDarkSlide: state.isDarkSlide,
+        typography: state.typography || getStoredTypography(),
         updatedAt: state.updatedAt,
         hymn: {
           hymnId: state.hymn.hymnId,
@@ -432,6 +496,7 @@ export function parseProjectorSnapshotHash(hash: string): LiveProjectorState | n
         isDarkSlide: Boolean(parsed.isDarkSlide),
         bible: parsed.bible,
         hymn: parsed.hymn,
+        typography: parsed.typography,
         updatedAt: parsed.updatedAt || 0,
       };
     }

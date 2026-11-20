@@ -199,9 +199,8 @@ export const ProjectorControlDock: React.FC<ProjectorControlDockProps> = ({
 
         <a
           href={`/projector${encodeProjectorSnapshotHash(state)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Open dedicated clean Projector window for second monitor / projector"
+          target="kristu_projector_window"
+          title="Open or focus dedicated clean Projector window for second monitor / projector"
           className="h-8 px-2.5 rounded-lg bg-white hover:bg-stone-100 text-stone-900 text-xs font-semibold flex items-center gap-1.5 transition-colors"
         >
           <Monitor className="w-3.5 h-3.5 text-amber-900" />

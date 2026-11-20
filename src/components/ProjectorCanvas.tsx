@@ -1,6 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { AdventistLogo } from './AdventistLogo';
 import type { LiveProjectorState } from '../utils/projectorBus';
+import {
+  getStoredTypography,
+  type LineSpacingPreference,
+  type TextSizePreference,
+} from '../utils/typography';
 
 interface ProjectorCanvasProps {
   state: LiveProjectorState;
@@ -9,43 +14,132 @@ interface ProjectorCanvasProps {
   onStepSlide?: (delta: -1 | 1) => void;
 }
 
-function getBibleTypographyClass(charCount: number): string {
-  if (charCount <= 85) {
-    return 'text-3xl sm:text-5xl md:text-6xl leading-[1.32]';
-  }
-  if (charCount <= 170) {
-    return 'text-2xl sm:text-4xl md:text-5xl leading-[1.36]';
-  }
-  if (charCount <= 270) {
-    return 'text-xl sm:text-3xl md:text-[2.65rem] leading-[1.38]';
-  }
-  if (charCount <= 380) {
-    return 'text-lg sm:text-2xl md:text-4xl leading-[1.4]';
-  }
-  return 'text-base sm:text-xl md:text-3xl leading-[1.42]';
+function getLeadingClass(lineSpacing: LineSpacingPreference): string {
+  if (lineSpacing === 'normal') return 'leading-[1.32]';
+  if (lineSpacing === 'loose') return 'leading-[1.65]';
+  return 'leading-[1.45]';
 }
 
-function getStanzaTypographyClass(lines: string[], isDual: boolean): string {
+function getLineGapClass(lineSpacing: LineSpacingPreference): string {
+  if (lineSpacing === 'normal') return 'mb-1 sm:mb-1.5';
+  if (lineSpacing === 'loose') return 'mb-3 sm:mb-4';
+  return 'mb-2 sm:mb-3';
+}
+
+function getBibleTypographyClass(
+  charCount: number,
+  textSize: TextSizePreference,
+  leadingClass: string
+): string {
+  const tier =
+    charCount <= 85 ? 0 : charCount <= 170 ? 1 : charCount <= 270 ? 2 : charCount <= 380 ? 3 : 4;
+
+  const map: Record<TextSizePreference, string[]> = {
+    standard: [
+      'text-2xl sm:text-4xl md:text-5xl',
+      'text-xl sm:text-3xl md:text-4xl',
+      'text-lg sm:text-2xl md:text-3xl',
+      'text-base sm:text-xl md:text-2xl',
+      'text-sm sm:text-lg md:text-xl',
+    ],
+    large: [
+      'text-3xl sm:text-5xl md:text-6xl',
+      'text-2xl sm:text-4xl md:text-5xl',
+      'text-xl sm:text-3xl md:text-[2.65rem]',
+      'text-lg sm:text-2xl md:text-4xl',
+      'text-base sm:text-xl md:text-3xl',
+    ],
+    xlarge: [
+      'text-3xl sm:text-6xl md:text-[4.25rem]',
+      'text-2xl sm:text-5xl md:text-6xl',
+      'text-xl sm:text-4xl md:text-5xl',
+      'text-lg sm:text-3xl md:text-[2.65rem]',
+      'text-base sm:text-2xl md:text-4xl',
+    ],
+    elder: [
+      'text-4xl sm:text-6xl md:text-[4.75rem]',
+      'text-3xl sm:text-5xl md:text-[4rem]',
+      'text-2xl sm:text-4xl md:text-5xl',
+      'text-xl sm:text-3xl md:text-[2.75rem]',
+      'text-lg sm:text-2xl md:text-4xl',
+    ],
+  };
+
+  return `${map[textSize][tier]} ${leadingClass}`;
+}
+
+function getBibleRefTypographyClass(textSize: TextSizePreference): string {
+  switch (textSize) {
+    case 'standard':
+      return 'text-base sm:text-xl md:text-2xl';
+    case 'xlarge':
+      return 'text-xl sm:text-3xl md:text-4xl';
+    case 'elder':
+      return 'text-2xl sm:text-3xl md:text-[2.5rem]';
+    case 'large':
+    default:
+      return 'text-lg sm:text-2xl md:text-[2rem]';
+  }
+}
+
+function getStanzaTypographyClass(
+  lines: string[],
+  isDual: boolean,
+  textSize: TextSizePreference,
+  leadingClass: string
+): string {
   const lineCount = lines.length;
   const maxLineChars = lines.reduce((max, l) => Math.max(max, l.length), 0);
+  const density = lineCount <= 4 && maxLineChars <= 42 ? 0 : lineCount <= 6 && maxLineChars <= 52 ? 1 : 2;
 
-  if (isDual) {
-    if (lineCount <= 4 && maxLineChars <= 42) {
-      return 'text-xl sm:text-3xl md:text-4xl leading-[1.4]';
-    }
-    if (lineCount <= 6 && maxLineChars <= 52) {
-      return 'text-lg sm:text-2xl md:text-3xl leading-[1.4]';
-    }
-    return 'text-base sm:text-xl md:text-2xl leading-[1.42]';
-  }
+  const dualMap: Record<TextSizePreference, string[]> = {
+    standard: [
+      'text-lg sm:text-2xl md:text-3xl',
+      'text-base sm:text-xl md:text-2xl',
+      'text-sm sm:text-lg md:text-xl',
+    ],
+    large: [
+      'text-xl sm:text-3xl md:text-4xl',
+      'text-lg sm:text-2xl md:text-3xl',
+      'text-base sm:text-xl md:text-2xl',
+    ],
+    xlarge: [
+      'text-2xl sm:text-4xl md:text-[2.6rem]',
+      'text-xl sm:text-3xl md:text-4xl',
+      'text-lg sm:text-2xl md:text-3xl',
+    ],
+    elder: [
+      'text-2xl sm:text-4xl md:text-5xl',
+      'text-xl sm:text-3xl md:text-[2.5rem]',
+      'text-lg sm:text-2xl md:text-3xl',
+    ],
+  };
 
-  if (lineCount <= 4 && maxLineChars <= 42) {
-    return 'text-2xl sm:text-4xl md:text-5xl leading-[1.38]';
-  }
-  if (lineCount <= 6 && maxLineChars <= 52) {
-    return 'text-xl sm:text-3xl md:text-[2.6rem] leading-[1.4]';
-  }
-  return 'text-lg sm:text-2xl md:text-4xl leading-[1.42]';
+  const singleMap: Record<TextSizePreference, string[]> = {
+    standard: [
+      'text-xl sm:text-3xl md:text-4xl',
+      'text-lg sm:text-2xl md:text-3xl',
+      'text-base sm:text-xl md:text-2xl',
+    ],
+    large: [
+      'text-2xl sm:text-4xl md:text-5xl',
+      'text-xl sm:text-3xl md:text-[2.6rem]',
+      'text-lg sm:text-2xl md:text-4xl',
+    ],
+    xlarge: [
+      'text-3xl sm:text-5xl md:text-6xl',
+      'text-2xl sm:text-4xl md:text-5xl',
+      'text-xl sm:text-3xl md:text-[2.65rem]',
+    ],
+    elder: [
+      'text-3xl sm:text-5xl md:text-[4.25rem]',
+      'text-2xl sm:text-4xl md:text-5xl',
+      'text-xl sm:text-3xl md:text-4xl',
+    ],
+  };
+
+  const sizeClass = isDual ? dualMap[textSize][density] : singleMap[textSize][density];
+  return `${sizeClass} ${leadingClass}`;
 }
 
 export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
@@ -56,6 +150,11 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
 }) => {
   const touchStartXRef = useRef<number | null>(null);
   const { isDarkSlide, isBlank, kind } = state;
+  const typography = state.typography || getStoredTypography();
+  const fontClass = typography.fontFamily === 'serif' ? 'font-projector-serif' : 'font-projector-sans';
+  const weightClass = typography.isBold ? 'font-bold' : 'font-normal';
+  const leadingClass = getLeadingClass(typography.lineSpacing);
+  const lineGapClass = getLineGapClass(typography.lineSpacing);
 
   useEffect(() => {
     if (!onRequestClose && !onStepSlide) return;
@@ -154,7 +253,12 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
     const safeVerse =
       verses.length > 0 ? Math.max(1, Math.min(verses.length, verseNum)) : Math.max(1, verseNum);
     const verseText = verses[safeVerse - 1] ?? activeVerseText ?? '';
-    const typographyClass = getBibleTypographyClass(verseText.length);
+    const typographyClass = getBibleTypographyClass(
+      verseText.length,
+      typography.textSize,
+      leadingClass
+    );
+    const refSizeClass = getBibleRefTypographyClass(typography.textSize);
 
     return (
       <div
@@ -165,13 +269,15 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
         aria-label={`${bookName} ${chapterIdx + 1}:${safeVerse} Projector Display`}
       >
         <div className="flex-1 flex items-center justify-center px-6 sm:px-14 md:px-24 pt-10 pb-6 overflow-y-auto">
-          <p className={`font-sans font-normal text-center max-w-5xl mx-auto select-text ${typographyClass}`}>
+          <p
+            className={`${fontClass} ${weightClass} text-center max-w-5xl mx-auto select-text ${typographyClass}`}
+          >
             <span className="tabular-nums">{safeVerse}</span> {verseText}
           </p>
         </div>
 
         <div className="w-full px-6 sm:px-14 md:px-20 pb-8 sm:pb-12 flex justify-end shrink-0">
-          <p className="font-sans font-normal text-lg sm:text-2xl md:text-[2rem] leading-tight text-right">
+          <p className={`${fontClass} ${weightClass} ${refSizeClass} leading-tight text-right`}>
             {bookName} {chapterIdx + 1}:{safeVerse} {versionLabel}
           </p>
         </div>
@@ -204,7 +310,12 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
     const combinedLinesForSizing = isDual && activeSlide
       ? [...activeSlide.localLines, ...activeSlide.englishLines]
       : activeSingleLines;
-    const typographyClass = getStanzaTypographyClass(combinedLinesForSizing, isDual);
+    const typographyClass = getStanzaTypographyClass(
+      combinedLinesForSizing,
+      isDual,
+      typography.textSize,
+      leadingClass
+    );
 
     return (
       <div
@@ -241,7 +352,7 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
         {/* Centered Stanza / Chorus Slide */}
         <div className="flex-1 flex items-center justify-center px-6 sm:px-12 md:px-20 pt-4 pb-12 sm:pb-16 overflow-y-auto">
           {!activeSlide ? (
-            <p className="font-sans text-2xl text-center">No lyrics available</p>
+            <p className={`${fontClass} text-2xl text-center`}>No lyrics available</p>
           ) : isDual ? (
             <div className="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-14 items-center">
               <div className="text-center space-y-2 sm:space-y-3">
@@ -253,12 +364,12 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
                   {languageLabel}
                 </div>
                 <div
-                  className={`font-sans font-normal select-text ${typographyClass} ${
+                  className={`${fontClass} ${weightClass} select-text ${typographyClass} ${
                     activeSlide.type === 'chorus' ? 'italic' : ''
                   }`}
                 >
                   {activeSlide.localLines.map((line, i) => (
-                    <p key={`l-${i}`} className="mb-1.5 sm:mb-2">
+                    <p key={`l-${i}`} className={lineGapClass}>
                       {line}
                     </p>
                   ))}
@@ -278,12 +389,12 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
                   English
                 </div>
                 <div
-                  className={`font-sans font-normal select-text ${typographyClass} ${
+                  className={`${fontClass} ${weightClass} select-text ${typographyClass} ${
                     activeSlide.type === 'chorus' ? 'italic' : ''
                   }`}
                 >
                   {activeSlide.englishLines.map((line, i) => (
-                    <p key={`e-${i}`} className="mb-1.5 sm:mb-2">
+                    <p key={`e-${i}`} className={lineGapClass}>
                       {line}
                     </p>
                   ))}
@@ -292,12 +403,12 @@ export const ProjectorCanvas: React.FC<ProjectorCanvasProps> = ({
             </div>
           ) : (
             <div
-              className={`font-sans font-normal text-center max-w-5xl mx-auto select-text ${typographyClass} ${
+              className={`${fontClass} ${weightClass} text-center max-w-5xl mx-auto select-text ${typographyClass} ${
                 activeSlide.type === 'chorus' ? 'italic' : ''
               }`}
             >
               {activeSingleLines.map((line, i) => (
-                <p key={i} className="mb-2 sm:mb-3">
+                <p key={i} className={lineGapClass}>
                   {line}
                 </p>
               ))}

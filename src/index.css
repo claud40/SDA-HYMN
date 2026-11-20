@@ -35,6 +35,14 @@
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
+.font-projector-serif {
+  font-family: 'Lora', Georgia, Cambria, serif;
+}
+
+.font-projector-sans {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
 /* Custom delicate scrollbars for hymn catalog and verse reader */
 ::-webkit-scrollbar {
   width: 6px;

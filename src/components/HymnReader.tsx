@@ -267,6 +267,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
   }, [hasPrev, hasNext, onNavigatePrev, onNavigateNext, onClose]);
 
   const handleProjectSlide = (type: 'stanza' | 'chorus', stanzaNumber = 1) => {
+    if (usageMode !== 'projector') return;
     const slides = buildHymnSlides(hymn);
     if (slides.length === 0) return;
     const targetIdx =
@@ -285,9 +286,6 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
       langMode: hymn.englishVerses && hymn.englishVerses.length > 0 ? lyricsLang : 'bemba',
       languageLabel,
     });
-    if (usageMode === 'personal') {
-      window.dispatchEvent(new CustomEvent('kristu-open-local-projector-screen'));
-    }
   };
 
   // Stop tune player on unmount or hymn change
@@ -512,18 +510,20 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
               <Bookmark className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
             </button>
 
-            {/* PowerPoint-style Stanza Projector Mode */}
-            <button
-              type="button"
-              onClick={() => handleProjectSlide('stanza', 1)}
-              className={`h-9 px-2.5 rounded-xl text-xs font-sans font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${themeStyles.btnSecondary}`}
-              title="Send Stanza 1 live to Projector"
-              aria-label="Project Stanza 1"
-            >
-              <Monitor className="w-4 h-4 text-amber-800 dark:text-amber-400" />
-              <span className="hidden xl:inline">Project Stanza 1</span>
-              <span className="xl:hidden">Project</span>
-            </button>
+            {/* PowerPoint-style Stanza Projector Mode (only shown when Settings is in Projector Mode) */}
+            {usageMode === 'projector' && (
+              <button
+                type="button"
+                onClick={() => handleProjectSlide('stanza', 1)}
+                className={`h-9 px-2.5 rounded-xl text-xs font-sans font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${themeStyles.btnSecondary}`}
+                title="Send Stanza 1 live to Projector"
+                aria-label="Project Stanza 1"
+              >
+                <Monitor className="w-4 h-4 text-amber-800 dark:text-amber-400" />
+                <span className="hidden xl:inline">Project Stanza 1</span>
+                <span className="xl:hidden">Project</span>
+              </button>
+            )}
 
             {/* Settings button */}
             {onOpenSettings && (
@@ -611,16 +611,18 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
             </button>
           )}
 
-          {/* Projector Mode */}
-          <button
-            type="button"
-            onClick={() => handleProjectSlide('stanza', 1)}
-            className={`flex items-center gap-1 h-8 px-2.5 rounded-lg font-sans font-medium shrink-0 transition-colors active:scale-95 ${themeStyles.btnSecondary}`}
-            title="Send Stanza 1 live to Projector"
-          >
-            <Monitor className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />
-            <span>Project</span>
-          </button>
+          {/* Projector Mode (only shown when Settings is in Projector Mode) */}
+          {usageMode === 'projector' && (
+            <button
+              type="button"
+              onClick={() => handleProjectSlide('stanza', 1)}
+              className={`flex items-center gap-1 h-8 px-2.5 rounded-lg font-sans font-medium shrink-0 transition-colors active:scale-95 ${themeStyles.btnSecondary}`}
+              title="Send Stanza 1 live to Projector"
+            >
+              <Monitor className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />
+              <span>Project</span>
+            </button>
+          )}
 
           {/* Font Toggle */}
           <button
@@ -860,6 +862,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                     const engLines = hymn.englishVerses ? hymn.englishVerses[verseIndex] || [] : [];
 
                     const activeLiveSlide =
+                      usageMode === 'projector' &&
                       liveState.kind === 'hymn' &&
                       !liveState.isBlank &&
                       liveState.hymn?.hymnId === hymn.id
@@ -876,26 +879,40 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                             isStanzaLive ? 'bg-emerald-50/80 dark:bg-emerald-950/30 ring-1 ring-emerald-500/40' : ''
                           }`}
                         >
-                          {/* Verse Number Stamp (tap to project this stanza) */}
-                          <button
-                            type="button"
-                            onClick={() => handleProjectSlide('stanza', verseIndex + 1)}
-                            title={`Project Stanza ${verseIndex + 1}`}
-                            aria-label={`Project Stanza ${verseIndex + 1}`}
-                            className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer hover:scale-105 ${
-                              isStanzaLive
-                                ? 'bg-emerald-600 text-white border border-emerald-700'
-                                : themeStyles.verseNum
-                            }`}
-                            style={{
-                              width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
-                              height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
-                              fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
-                              fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
-                            }}
-                          >
-                            {verseIndex + 1}
-                          </button>
+                          {/* Verse Number Stamp (tap to project in Projector Mode) */}
+                          {usageMode === 'projector' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleProjectSlide('stanza', verseIndex + 1)}
+                              title={`Project Stanza ${verseIndex + 1}`}
+                              aria-label={`Project Stanza ${verseIndex + 1}`}
+                              className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer hover:scale-105 ${
+                                isStanzaLive
+                                  ? 'bg-emerald-600 text-white border border-emerald-700'
+                                  : themeStyles.verseNum
+                              }`}
+                              style={{
+                                width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                                height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                                fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
+                                fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                              }}
+                            >
+                              {verseIndex + 1}
+                            </button>
+                          ) : (
+                            <div
+                              className={`shrink-0 rounded-full flex items-center justify-center font-bold select-none ${themeStyles.verseNum}`}
+                              style={{
+                                width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                                height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                                fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
+                                fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                              }}
+                            >
+                              {verseIndex + 1}
+                            </div>
+                          )}
 
                           {/* Dual Columns: Bemba on Left, English on Right */}
                           <div
@@ -960,6 +977,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                         {/* Chorus after 1st verse */}
                         {(hymn.chorus || hymn.englishChorus) && verseIndex === 0 && (
                           <div className={`my-3 sm:my-5 p-3.5 sm:p-5 rounded-xl ${themeStyles.chorusBg} ${
+                            usageMode === 'projector' &&
                             liveState.kind === 'hymn' &&
                             !liveState.isBlank &&
                             liveState.hymn?.hymnId === hymn.id &&
@@ -975,14 +993,16 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                               <div>
                                 <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center justify-between gap-2 text-amber-900 dark:text-amber-400">
                                   <span>{(hymn.chorusLabel || 'Chibwekesho').replace(/:$/, '')}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleProjectSlide('chorus', 1)}
-                                    className="px-2 py-0.5 rounded-md bg-amber-900/10 hover:bg-amber-900/20 dark:bg-amber-400/15 dark:hover:bg-amber-400/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                                  >
-                                    <Monitor className="w-3 h-3" />
-                                    <span>Project Chorus</span>
-                                  </button>
+                                  {usageMode === 'projector' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleProjectSlide('chorus', 1)}
+                                      className="px-2 py-0.5 rounded-md bg-amber-900/10 hover:bg-amber-900/20 dark:bg-amber-400/15 dark:hover:bg-amber-400/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <Monitor className="w-3 h-3" />
+                                      <span>Project Chorus</span>
+                                    </button>
+                                  )}
                                 </div>
                                 {hymn.chorus ? (
                                   <div
@@ -1063,6 +1083,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
               <div className="space-y-6 sm:space-y-7 text-center">
                 {activeVerses.map((verseLines, verseIndex) => {
                   const activeLiveSlide =
+                    usageMode === 'projector' &&
                     liveState.kind === 'hymn' &&
                     !liveState.isBlank &&
                     liveState.hymn?.hymnId === hymn.id
@@ -1080,26 +1101,40 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                         isStanzaLive ? 'bg-emerald-50/80 dark:bg-emerald-950/30 ring-1 ring-emerald-500/40' : ''
                       }`}
                     >
-                      {/* Verse Number Stamp (tap to project this stanza) */}
-                      <button
-                        type="button"
-                        onClick={() => handleProjectSlide('stanza', verseIndex + 1)}
-                        title={`Project Stanza ${verseIndex + 1}`}
-                        aria-label={`Project Stanza ${verseIndex + 1}`}
-                        className={`mb-2.5 shrink-0 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer hover:scale-105 ${
-                          isStanzaLive
-                            ? 'bg-emerald-600 text-white border border-emerald-700'
-                            : themeStyles.verseNum
-                        }`}
-                        style={{
-                          width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
-                          height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
-                          fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
-                          fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
-                        }}
-                      >
-                        {verseIndex + 1}
-                      </button>
+                      {/* Verse Number Stamp (tap to project in Projector Mode) */}
+                      {usageMode === 'projector' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleProjectSlide('stanza', verseIndex + 1)}
+                          title={`Project Stanza ${verseIndex + 1}`}
+                          aria-label={`Project Stanza ${verseIndex + 1}`}
+                          className={`mb-2.5 shrink-0 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer hover:scale-105 ${
+                            isStanzaLive
+                              ? 'bg-emerald-600 text-white border border-emerald-700'
+                              : themeStyles.verseNum
+                          }`}
+                          style={{
+                            width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                            height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                            fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
+                            fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                          }}
+                        >
+                          {verseIndex + 1}
+                        </button>
+                      ) : (
+                        <div
+                          className={`mb-2.5 shrink-0 rounded-full flex items-center justify-center font-bold select-none ${themeStyles.verseNum}`}
+                          style={{
+                            width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                            height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
+                            fontSize: `${TYPOGRAPHY_CONFIG.textSize[textSize].numPx}px`,
+                            fontFamily: TYPOGRAPHY_CONFIG.fontFamily[fontPref],
+                          }}
+                        >
+                          {verseIndex + 1}
+                        </div>
+                      )}
 
                       {/* Verse Lyrics */}
                       <div
@@ -1130,6 +1165,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                     {activeChorus && verseIndex === 0 && (
                       <div
                         className={`my-3 sm:my-4 p-4 sm:p-5 rounded-xl text-center ${themeStyles.chorusBg} ${
+                          usageMode === 'projector' &&
                           liveState.kind === 'hymn' &&
                           !liveState.isBlank &&
                           liveState.hymn?.hymnId === hymn.id &&
@@ -1140,14 +1176,16 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                       >
                         <div className="text-xs uppercase tracking-wider font-sans mb-2 font-bold flex items-center justify-center gap-2 text-amber-900 dark:text-amber-400">
                           <span>{activeChorusLabel}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleProjectSlide('chorus', 1)}
-                            className="px-2 py-0.5 rounded-md bg-amber-900/10 hover:bg-amber-900/20 dark:bg-amber-400/15 dark:hover:bg-amber-400/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                          >
-                            <Monitor className="w-3 h-3" />
-                            <span>Project</span>
-                          </button>
+                          {usageMode === 'projector' && (
+                            <button
+                              type="button"
+                              onClick={() => handleProjectSlide('chorus', 1)}
+                              className="px-2 py-0.5 rounded-md bg-amber-900/10 hover:bg-amber-900/20 dark:bg-amber-400/15 dark:hover:bg-amber-400/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <Monitor className="w-3 h-3" />
+                              <span>Project</span>
+                            </button>
+                          )}
                         </div>
                         <div
                           className="italic transition-all"
@@ -1186,7 +1224,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
       {/* Sticky Bottom Navigation Bar (Previous / Next Hymn) */}
       <div
         className={`shrink-0 h-12 sm:h-14 px-3 sm:px-6 border-t flex items-center justify-between no-print ${themeStyles.navBar} ${
-          usageMode === 'projector' || liveState.kind !== 'idle' ? 'mb-16' : ''
+          usageMode === 'projector' ? 'mb-16' : ''
         }`}
       >
         <button

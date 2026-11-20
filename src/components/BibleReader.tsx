@@ -500,8 +500,8 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     (vNum) => Boolean(savedHighlights[`${bookIdx}-${safeChapterIdx}-${vNum}`])
   );
 
-  const handleOpenProjector = (startVerse?: number, openScreenOnDevice = false) => {
-    if (!currentBook || currentVerses.length === 0) return;
+  const handleOpenProjector = (startVerse?: number) => {
+    if (usageMode !== 'projector' || !currentBook || currentVerses.length === 0) return;
     const candidate =
       startVerse ??
       (selectedVerses.length > 0 ? Math.min(...selectedVerses) : highlightedVerse ?? 1);
@@ -517,9 +517,6 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     setHighlightedVerse(clampedVerse);
     setSelectedVerses([]);
     setSelectionNotice(null);
-    if (openScreenOnDevice || usageMode === 'personal') {
-      window.dispatchEvent(new CustomEvent('kristu-open-local-projector-screen'));
-    }
   };
 
   const filteredBooks = useMemo(() => {
@@ -563,12 +560,12 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
 
           {/* Bible Version Selector & Projector Launch */}
           <div className="flex flex-wrap items-center gap-2">
-            {currentBook && currentVerses.length > 0 && !isLoading && !loadError && (
+            {usageMode === 'projector' && currentBook && currentVerses.length > 0 && !isLoading && !loadError && (
               <button
                 type="button"
                 onClick={() => handleOpenProjector()}
                 className="h-10 px-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-1.5 transition-colors"
-                title="Project one verse at a time in order"
+                title="Project current verse live"
               >
                 <Monitor className="w-3.5 h-3.5 text-amber-900 dark:text-amber-400" />
                 <span>Projector</span>
@@ -806,7 +803,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       {!isLoading && !loadError && !searchResults && currentBook && (
         <article
           className={`w-full bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 py-5 sm:px-8 sm:py-8 ${
-            selectedVerses.length > 0 ? 'pb-32 sm:pb-28' : usageMode === 'projector' || liveState.kind !== 'idle' ? 'pb-24' : ''
+            selectedVerses.length > 0 ? 'pb-32 sm:pb-28' : usageMode === 'projector' ? 'pb-24' : ''
           }`}
         >
           <header className="pb-5 mb-6 border-b border-stone-200/70 dark:border-stone-800 flex items-baseline justify-between gap-4 flex-wrap">
@@ -817,7 +814,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
                 {usageMode === 'projector'
                   ? `${versionInfo.fullName} · ${currentVerses.length} verses · Tap any verse to send it live to the Projector`
-                  : `${versionInfo.fullName} · ${currentVerses.length} verses · Tap a verse to highlight, project, copy, or share`}
+                  : `${versionInfo.fullName} · ${currentVerses.length} verses · Tap a verse to highlight, copy, or share`}
               </p>
             </div>
           </header>
@@ -839,6 +836,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
               const isJumpHighlighted = highlightedVerse === verseNum;
               const isSelected = selectedVerses.includes(verseNum);
               const isProjectedLive =
+                usageMode === 'projector' &&
                 liveState.kind === 'bible' &&
                 !liveState.isBlank &&
                 liveState.bible?.bookIdx === bookIdx &&
@@ -984,14 +982,16 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
 
               {/* Project, Copy & Share Actions */}
               <div className="flex items-center gap-2 ml-auto">
-                <button
-                  type="button"
-                  onClick={() => handleOpenProjector(Math.min(...selectedVerses))}
-                  className="h-9 px-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5 transition-colors"
-                >
-                  <Monitor className="w-3.5 h-3.5 text-amber-900 dark:text-amber-400" />
-                  <span>Project</span>
-                </button>
+                {usageMode === 'projector' && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenProjector(Math.min(...selectedVerses))}
+                    className="h-9 px-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5 transition-colors"
+                  >
+                    <Monitor className="w-3.5 h-3.5 text-amber-900 dark:text-amber-400" />
+                    <span>Project</span>
+                  </button>
+                )}
 
                 <button
                   type="button"

@@ -79,6 +79,9 @@ export default function App() {
       const detail = (e as CustomEvent)?.detail;
       if (detail?.usageMode === 'projector' || detail?.usageMode === 'personal') {
         setUsageMode(detail.usageMode as UsageModePreference);
+        if (detail.usageMode === 'personal') {
+          setIsLocalCleanScreenOpen(false);
+        }
       }
     };
 
@@ -209,10 +212,10 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-hymn-sans overflow-x-hidden ${
       activeTab === 'bible'
-        ? usageMode === 'projector' || liveProjectorState.kind !== 'idle'
+        ? usageMode === 'projector'
           ? 'pb-24'
           : 'pb-8'
-        : usageMode === 'projector' || liveProjectorState.kind !== 'idle'
+        : usageMode === 'projector'
         ? 'pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:pb-24'
         : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-8'
     }`}>
@@ -398,8 +401,8 @@ export default function App() {
         <SplashScreen onFinish={() => setShowSplash(false)} />
       )}
 
-      {/* Control Device Operator Dock (NEVER rendered on the /projector audience display) */}
-      {(usageMode === 'projector' || liveProjectorState.kind !== 'idle') &&
+      {/* Control Device Operator Dock (ONLY shown when Settings is in Projector Mode; NEVER on /projector display) */}
+      {usageMode === 'projector' &&
         !isSettingsOpen &&
         !isDialpadOpen &&
         !isLanguageModalOpen &&
@@ -412,7 +415,7 @@ export default function App() {
         )}
 
       {/* Clean Full-Screen Projector Preview (Zero controls on screen; Esc or double-click returns to control) */}
-      {isLocalCleanScreenOpen && (
+      {usageMode === 'projector' && isLocalCleanScreenOpen && (
         <ProjectorCanvas
           state={liveProjectorState}
           isFullViewport
