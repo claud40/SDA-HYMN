@@ -11,7 +11,8 @@ export type WebsiteRoute =
   | '/privacy'
   | '/terms'
   | '/support'
-  | '/app';
+  | '/app'
+  | '/projector';
 
 export const WEBSITE_ROUTES: readonly WebsiteRoute[] = [
   '/',
@@ -27,6 +28,7 @@ export const WEBSITE_ROUTES: readonly WebsiteRoute[] = [
   '/terms',
   '/support',
   '/app',
+  '/projector',
 ] as const;
 
 export function normalizeRoute(pathname: string): WebsiteRoute {

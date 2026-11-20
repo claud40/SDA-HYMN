@@ -14,9 +14,22 @@ import { SplashScreen } from './components/SplashScreen';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { BibleReader } from './components/BibleReader';
 import { ChooseLanguageModal } from './components/ChooseLanguageModal';
+import { ProjectorCanvas } from './components/ProjectorCanvas';
+import { ProjectorControlDock } from './components/ProjectorControlDock';
 import { getHymnalLanguageConfig } from './data/languages';
 import { applyThemeToDOM, getStoredThemePreference } from './utils/theme';
-import { applyTypographyToDOM, getStoredTypography } from './utils/typography';
+import {
+  applyTypographyToDOM,
+  getStoredTypography,
+  getStoredUsageMode,
+  UsageModePreference,
+} from './utils/typography';
+import {
+  getLiveProjectorState,
+  LiveProjectorState,
+  stepProjectorSlide,
+  subscribeLiveProjector,
+} from './utils/projectorBus';
 import { sanitizeSearchQuery, matchHymnByQuery, MAX_SEARCH_LENGTH } from './utils/searchSanitizer';
 
 export default function App() {
@@ -45,6 +58,11 @@ export default function App() {
 
   // Typography settings state for app-wide reactive rendering
   const [typography, setTypography] = useState(() => getStoredTypography());
+  const [usageMode, setUsageMode] = useState<UsageModePreference>(() => getStoredUsageMode());
+  const [liveProjectorState, setLiveProjectorState] = useState<LiveProjectorState>(() =>
+    getLiveProjectorState()
+  );
+  const [isLocalCleanScreenOpen, setIsLocalCleanScreenOpen] = useState<boolean>(false);
 
   // Initialize theme and typography on app mount and listen for real-time changes
   useEffect(() => {
@@ -57,9 +75,29 @@ export default function App() {
       }
     };
 
+    const handleSettingsChange = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.usageMode === 'projector' || detail?.usageMode === 'personal') {
+        setUsageMode(detail.usageMode as UsageModePreference);
+      }
+    };
+
+    const handleOpenLocalScreen = () => {
+      setIsLocalCleanScreenOpen(true);
+    };
+
     window.addEventListener('hymnal-typography-change', handleTypographyChange);
+    window.addEventListener('hymnal-settings-change', handleSettingsChange);
+    window.addEventListener('kristu-open-local-projector-screen', handleOpenLocalScreen);
+    const unsubscribeLive = subscribeLiveProjector((next) => {
+      setLiveProjectorState(next);
+    });
+
     return () => {
       window.removeEventListener('hymnal-typography-change', handleTypographyChange);
+      window.removeEventListener('hymnal-settings-change', handleSettingsChange);
+      window.removeEventListener('kristu-open-local-projector-screen', handleOpenLocalScreen);
+      unsubscribeLive();
     };
   }, []);
 
@@ -169,7 +207,15 @@ export default function App() {
   }, [activeTab]);
 
   return (
-    <div className={`min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-hymn-sans overflow-x-hidden ${activeTab === 'bible' ? 'pb-8' : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-8'}`}>
+    <div className={`min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-hymn-sans overflow-x-hidden ${
+      activeTab === 'bible'
+        ? usageMode === 'projector' || liveProjectorState.kind !== 'idle'
+          ? 'pb-24'
+          : 'pb-8'
+        : usageMode === 'projector' || liveProjectorState.kind !== 'idle'
+        ? 'pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:pb-24'
+        : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-8'
+    }`}>
       {/* Top Bar Header strictly following 3-Zone Top Bar Contract (hidden in focused Bible reader view) */}
       {activeTab !== 'bible' && (
         <Header
@@ -350,6 +396,29 @@ export default function App() {
       {/* App Opening Screen with Seventh-day Adventist Logo */}
       {showSplash && (
         <SplashScreen onFinish={() => setShowSplash(false)} />
+      )}
+
+      {/* Control Device Operator Dock (NEVER rendered on the /projector audience display) */}
+      {(usageMode === 'projector' || liveProjectorState.kind !== 'idle') &&
+        !isSettingsOpen &&
+        !isDialpadOpen &&
+        !isLanguageModalOpen &&
+        !isLocalCleanScreenOpen && (
+          <ProjectorControlDock
+            state={liveProjectorState}
+            onOpenCleanFullView={() => setIsLocalCleanScreenOpen(true)}
+            hasBottomNavOffset={activeTab !== 'bible' && !activeHymn}
+          />
+        )}
+
+      {/* Clean Full-Screen Projector Preview (Zero controls on screen; Esc or double-click returns to control) */}
+      {isLocalCleanScreenOpen && (
+        <ProjectorCanvas
+          state={liveProjectorState}
+          isFullViewport
+          onStepSlide={(delta) => stepProjectorSlide(delta)}
+          onRequestClose={() => setIsLocalCleanScreenOpen(false)}
+        />
       )}
 
       {/* Offline Status Indicator */}

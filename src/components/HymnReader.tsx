@@ -19,7 +19,6 @@ import {
   Monitor
 } from 'lucide-react';
 import { Hymn } from '../data/hymns';
-import { HymnProjector } from './HymnProjector';
 import { hymnAudio } from '../utils/audioPlayer';
 import {
   TYPOGRAPHY_CONFIG,
@@ -34,6 +33,13 @@ import {
   UsageModePreference,
   getStoredUsageMode,
 } from '../utils/typography';
+import {
+  buildHymnSlides,
+  getLiveProjectorState,
+  LiveProjectorState,
+  projectHymnSlide,
+  subscribeLiveProjector,
+} from '../utils/projectorBus';
 
 interface HymnReaderProps {
   hymn: Hymn;
@@ -94,10 +100,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [activeNoteIdx, setActiveNoteIdx] = useState<number>(-1);
   const [usageMode, setUsageMode] = useState<UsageModePreference>(() => getStoredUsageMode());
-  const [isProjectorOpen, setIsProjectorOpen] = useState<boolean>(
-    () => getStoredUsageMode() === 'projector'
-  );
-  const [projectorStartStanza, setProjectorStartStanza] = useState<number>(1);
+  const [liveState, setLiveState] = useState<LiveProjectorState>(() => getLiveProjectorState());
   const [isAutoScrolling, setIsAutoScrolling] = useState<boolean>(() => {
     return localStorage.getItem('hymnal_autoscroll_enabled') === 'true';
   });
@@ -116,18 +119,21 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
   const readerContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Reset lyrics language on hymn change and auto-open projector if Projector Mode is enabled
+  // Reset lyrics language on hymn change (never auto-overwrite live projector while browsing songs)
   useEffect(() => {
     if (hymn.englishVerses && hymn.englishVerses.length > 0) {
       setLyricsLang('side-by-side');
     } else {
       setLyricsLang('bemba');
     }
-    if (usageMode === 'projector') {
-      setProjectorStartStanza(1);
-      setIsProjectorOpen(true);
-    }
-  }, [hymn.id, hymn.englishVerses, usageMode]);
+  }, [hymn.id, hymn.englishVerses]);
+
+  // Keep live projector state synced so active stanza shows LIVE indicator on Control Device
+  useEffect(() => {
+    return subscribeLiveProjector((next) => {
+      setLiveState(next);
+    });
+  }, []);
 
   // Sync theme changes if app theme changes while reader is open
   useEffect(() => {
@@ -162,14 +168,7 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
         setColumnSpacing(e.detail.columnSpacing as ColumnSpacingPreference);
       }
       if (e.detail?.usageMode === 'projector' || e.detail?.usageMode === 'personal') {
-        const nextMode = e.detail.usageMode as UsageModePreference;
-        setUsageMode(nextMode);
-        if (nextMode === 'projector') {
-          setProjectorStartStanza(1);
-          setIsProjectorOpen(true);
-        } else {
-          setIsProjectorOpen(false);
-        }
+        setUsageMode(e.detail.usageMode as UsageModePreference);
       }
     };
     window.addEventListener('hymnal-typography-change', handleTypographyChange);
@@ -252,9 +251,8 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
     });
   };
 
-  // Keyboard navigation (paused while PowerPoint-style Projector modal is open)
+  // Keyboard navigation
   useEffect(() => {
-    if (isProjectorOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -266,7 +264,31 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasPrev, hasNext, onNavigatePrev, onNavigateNext, onClose, isProjectorOpen]);
+  }, [hasPrev, hasNext, onNavigatePrev, onNavigateNext, onClose]);
+
+  const handleProjectSlide = (type: 'stanza' | 'chorus', stanzaNumber = 1) => {
+    const slides = buildHymnSlides(hymn);
+    if (slides.length === 0) return;
+    const targetIdx =
+      type === 'chorus'
+        ? Math.max(0, slides.findIndex((s) => s.type === 'chorus'))
+        : Math.max(
+            0,
+            slides.findIndex((s) => s.type === 'stanza' && s.stanzaNumber === stanzaNumber)
+          );
+    projectHymnSlide({
+      hymnId: hymn.id,
+      hymnNumber: hymn.number,
+      hymnTitle: hymn.title,
+      slideIndex: targetIdx,
+      slides,
+      langMode: hymn.englishVerses && hymn.englishVerses.length > 0 ? lyricsLang : 'bemba',
+      languageLabel,
+    });
+    if (usageMode === 'personal') {
+      window.dispatchEvent(new CustomEvent('kristu-open-local-projector-screen'));
+    }
+  };
 
   // Stop tune player on unmount or hymn change
   useEffect(() => {
@@ -492,16 +514,15 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
             {/* PowerPoint-style Stanza Projector Mode */}
             <button
-              onClick={() => {
-                setProjectorStartStanza(1);
-                setIsProjectorOpen(true);
-              }}
+              type="button"
+              onClick={() => handleProjectSlide('stanza', 1)}
               className={`h-9 px-2.5 rounded-xl text-xs font-sans font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${themeStyles.btnSecondary}`}
-              title="Project stanzas one slide at a time (PowerPoint mode)"
-              aria-label="Open hymn projector mode"
+              title="Send Stanza 1 live to Projector"
+              aria-label="Project Stanza 1"
             >
               <Monitor className="w-4 h-4 text-amber-800 dark:text-amber-400" />
-              <span className="hidden xl:inline">Projector</span>
+              <span className="hidden xl:inline">Project Stanza 1</span>
+              <span className="xl:hidden">Project</span>
             </button>
 
             {/* Settings button */}
@@ -592,12 +613,10 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
           {/* Projector Mode */}
           <button
-            onClick={() => {
-              setProjectorStartStanza(1);
-              setIsProjectorOpen(true);
-            }}
+            type="button"
+            onClick={() => handleProjectSlide('stanza', 1)}
             className={`flex items-center gap-1 h-8 px-2.5 rounded-lg font-sans font-medium shrink-0 transition-colors active:scale-95 ${themeStyles.btnSecondary}`}
-            title="Project stanzas one slide at a time"
+            title="Send Stanza 1 live to Projector"
           >
             <Monitor className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />
             <span>Project</span>
@@ -753,6 +772,12 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
               <span className="italic">{hymn.scripture}</span>
             </div>
 
+            {usageMode === 'projector' && (
+              <p className="mt-2 text-xs font-sans font-medium text-amber-900 dark:text-amber-400">
+                Projector Mode · Tap any stanza number or chorus below to send it live
+              </p>
+            )}
+
             {/* Language Switcher when English lyrics are provided */}
             {hymn.englishVerses && hymn.englishVerses.length > 0 && (
               <div className="inline-flex items-center p-1 rounded-xl bg-stone-200/60 dark:bg-stone-800/80 mt-3.5 text-xs font-semibold gap-1">
@@ -834,19 +859,34 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                     const bembaLines = hymn.verses[verseIndex] || [];
                     const engLines = hymn.englishVerses ? hymn.englishVerses[verseIndex] || [] : [];
 
+                    const activeLiveSlide =
+                      liveState.kind === 'hymn' &&
+                      !liveState.isBlank &&
+                      liveState.hymn?.hymnId === hymn.id
+                        ? liveState.hymn.slides[liveState.hymn.slideIndex]
+                        : undefined;
+                    const isStanzaLive =
+                      activeLiveSlide?.type === 'stanza' &&
+                      activeLiveSlide?.stanzaNumber === verseIndex + 1;
+
                     return (
                       <React.Fragment key={`dual-verse-${verseIndex}`}>
-                        <div className="flex items-start gap-3 sm:gap-4">
-                          {/* Verse Number Stamp (tap to project from this stanza) */}
+                        <div
+                          className={`flex items-start gap-3 sm:gap-4 rounded-2xl p-2 -mx-2 transition-colors ${
+                            isStanzaLive ? 'bg-emerald-50/80 dark:bg-emerald-950/30 ring-1 ring-emerald-500/40' : ''
+                          }`}
+                        >
+                          {/* Verse Number Stamp (tap to project this stanza) */}
                           <button
                             type="button"
-                            onClick={() => {
-                              setProjectorStartStanza(verseIndex + 1);
-                              setIsProjectorOpen(true);
-                            }}
-                            title={`Project from Stanza ${verseIndex + 1}`}
-                            aria-label={`Project from Stanza ${verseIndex + 1}`}
-                            className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer hover:scale-105 ${themeStyles.verseNum}`}
+                            onClick={() => handleProjectSlide('stanza', verseIndex + 1)}
+                            title={`Project Stanza ${verseIndex + 1}`}
+                            aria-label={`Project Stanza ${verseIndex + 1}`}
+                            className={`shrink-0 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer hover:scale-105 ${
+                              isStanzaLive
+                                ? 'bg-emerald-600 text-white border border-emerald-700'
+                                : themeStyles.verseNum
+                            }`}
                             style={{
                               width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
                               height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
@@ -919,15 +959,30 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
                         {/* Chorus after 1st verse */}
                         {(hymn.chorus || hymn.englishChorus) && verseIndex === 0 && (
-                          <div className={`my-3 sm:my-5 p-3.5 sm:p-5 rounded-xl ${themeStyles.chorusBg}`}>
+                          <div className={`my-3 sm:my-5 p-3.5 sm:p-5 rounded-xl ${themeStyles.chorusBg} ${
+                            liveState.kind === 'hymn' &&
+                            !liveState.isBlank &&
+                            liveState.hymn?.hymnId === hymn.id &&
+                            liveState.hymn.slides[liveState.hymn.slideIndex]?.type === 'chorus'
+                              ? 'ring-2 ring-emerald-500/60'
+                              : ''
+                          }`}>
                             <div
                               className="grid grid-cols-1 md:grid-cols-2 gap-y-4 transition-all"
                               style={{ columnGap: `${dualGapPx}px` }}
                             >
                               {/* Left: Bemba Chibwekesho */}
                               <div>
-                                <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-400">
+                                <div className="text-xs uppercase tracking-wider font-sans mb-1.5 font-bold flex items-center justify-between gap-2 text-amber-900 dark:text-amber-400">
                                   <span>{(hymn.chorusLabel || 'Chibwekesho').replace(/:$/, '')}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleProjectSlide('chorus', 1)}
+                                    className="px-2 py-0.5 rounded-md bg-amber-900/10 hover:bg-amber-900/20 dark:bg-amber-400/15 dark:hover:bg-amber-400/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Monitor className="w-3 h-3" />
+                                    <span>Project Chorus</span>
+                                  </button>
                                 </div>
                                 {hymn.chorus ? (
                                   <div
@@ -1006,20 +1061,36 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
             return (
               <div className="space-y-6 sm:space-y-7 text-center">
-                {activeVerses.map((verseLines, verseIndex) => (
+                {activeVerses.map((verseLines, verseIndex) => {
+                  const activeLiveSlide =
+                    liveState.kind === 'hymn' &&
+                    !liveState.isBlank &&
+                    liveState.hymn?.hymnId === hymn.id
+                      ? liveState.hymn.slides[liveState.hymn.slideIndex]
+                      : undefined;
+                  const isStanzaLive =
+                    activeLiveSlide?.type === 'stanza' &&
+                    activeLiveSlide?.stanzaNumber === verseIndex + 1;
+
+                  return (
                   <React.Fragment key={`verse-${verseIndex}`}>
                     {/* Regular Verse — Centered */}
-                    <div className="flex flex-col items-center text-center">
-                      {/* Verse Number Stamp (tap to project from this stanza) */}
+                    <div
+                      className={`flex flex-col items-center text-center rounded-2xl p-2 transition-colors ${
+                        isStanzaLive ? 'bg-emerald-50/80 dark:bg-emerald-950/30 ring-1 ring-emerald-500/40' : ''
+                      }`}
+                    >
+                      {/* Verse Number Stamp (tap to project this stanza) */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setProjectorStartStanza(verseIndex + 1);
-                          setIsProjectorOpen(true);
-                        }}
-                        title={`Project from Stanza ${verseIndex + 1}`}
-                        aria-label={`Project from Stanza ${verseIndex + 1}`}
-                        className={`mb-2.5 shrink-0 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer hover:scale-105 ${themeStyles.verseNum}`}
+                        onClick={() => handleProjectSlide('stanza', verseIndex + 1)}
+                        title={`Project Stanza ${verseIndex + 1}`}
+                        aria-label={`Project Stanza ${verseIndex + 1}`}
+                        className={`mb-2.5 shrink-0 rounded-full flex items-center justify-center font-bold transition-all cursor-pointer hover:scale-105 ${
+                          isStanzaLive
+                            ? 'bg-emerald-600 text-white border border-emerald-700'
+                            : themeStyles.verseNum
+                        }`}
                         style={{
                           width: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
                           height: `${Math.max(28, TYPOGRAPHY_CONFIG.textSize[textSize].numPx * 1.8)}px`,
@@ -1058,10 +1129,25 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                     {/* Chorus rendered after the 1st verse (traditional hymnal arrangement) — Centered */}
                     {activeChorus && verseIndex === 0 && (
                       <div
-                        className={`my-3 sm:my-4 p-4 sm:p-5 rounded-xl text-center ${themeStyles.chorusBg}`}
+                        className={`my-3 sm:my-4 p-4 sm:p-5 rounded-xl text-center ${themeStyles.chorusBg} ${
+                          liveState.kind === 'hymn' &&
+                          !liveState.isBlank &&
+                          liveState.hymn?.hymnId === hymn.id &&
+                          liveState.hymn.slides[liveState.hymn.slideIndex]?.type === 'chorus'
+                            ? 'ring-2 ring-emerald-500/60'
+                            : ''
+                        }`}
                       >
-                        <div className="text-xs uppercase tracking-wider font-sans mb-2 font-bold flex items-center justify-center gap-1.5 text-amber-900 dark:text-amber-400">
+                        <div className="text-xs uppercase tracking-wider font-sans mb-2 font-bold flex items-center justify-center gap-2 text-amber-900 dark:text-amber-400">
                           <span>{activeChorusLabel}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleProjectSlide('chorus', 1)}
+                            className="px-2 py-0.5 rounded-md bg-amber-900/10 hover:bg-amber-900/20 dark:bg-amber-400/15 dark:hover:bg-amber-400/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Monitor className="w-3 h-3" />
+                            <span>Project</span>
+                          </button>
                         </div>
                         <div
                           className="italic transition-all"
@@ -1088,7 +1174,8 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
                       </div>
                     )}
                   </React.Fragment>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
@@ -1098,7 +1185,9 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
 
       {/* Sticky Bottom Navigation Bar (Previous / Next Hymn) */}
       <div
-        className={`shrink-0 h-12 sm:h-14 px-3 sm:px-6 border-t flex items-center justify-between no-print ${themeStyles.navBar}`}
+        className={`shrink-0 h-12 sm:h-14 px-3 sm:px-6 border-t flex items-center justify-between no-print ${themeStyles.navBar} ${
+          usageMode === 'projector' || liveState.kind !== 'idle' ? 'mb-16' : ''
+        }`}
       >
         <button
           onClick={onNavigatePrev}
@@ -1140,17 +1229,6 @@ export const HymnReader: React.FC<HymnReaderProps> = ({
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
-
-      {/* Full-Screen PowerPoint-Style Stanza Projector */}
-      {isProjectorOpen && (
-        <HymnProjector
-          hymn={hymn}
-          initialStanzaNumber={projectorStartStanza}
-          initialLang={lyricsLang}
-          languageLabel={languageLabel}
-          onClose={() => setIsProjectorOpen(false)}
-        />
-      )}
     </div>
   );
 };

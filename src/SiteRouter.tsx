@@ -18,6 +18,7 @@ import { TermsPage } from './website/pages/TermsPage';
 import { SupportProjectPage } from './website/pages/SupportProjectPage';
 
 const HymnalApp = lazy(() => import('./App'));
+const ProjectorDisplayPage = lazy(() => import('./components/ProjectorDisplayPage'));
 
 function getInitialRoute(): WebsiteRoute {
   if (typeof window === 'undefined') return '/';
@@ -48,6 +49,7 @@ const ROUTE_TITLES: Record<WebsiteRoute, string> = {
   '/terms': 'Terms & Conditions — Kristu mu Nyimbo',
   '/support': 'Support the Project — Kristu mu Nyimbo',
   '/app': 'Kristu mu Nyimbo — Hymnal & Bible',
+  '/projector': 'Projector Display — Kristu mu Nyimbo',
 };
 
 export const SiteRouter: React.FC = () => {
@@ -90,6 +92,14 @@ export const SiteRouter: React.FC = () => {
       window.scrollTo({ top: 0, behavior: 'auto' });
     }
   }, []);
+
+  if (route === '/projector') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-white" />}>
+        <ProjectorDisplayPage />
+      </Suspense>
+    );
+  }
 
   if (route === '/app') {
     return (
