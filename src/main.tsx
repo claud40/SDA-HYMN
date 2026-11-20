@@ -40,11 +40,19 @@ class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
     console.error('RootErrorBoundary caught error:', error, errorInfo);
   }
 
-  handleReload = () => {
+  handleReload = async () => {
     try {
       localStorage.removeItem('hymnal_theme_pref');
       localStorage.removeItem('hymnal_text_size');
       localStorage.removeItem('hymnal_line_spacing');
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.update().catch(() => {})));
+      }
     } catch {}
     window.location.reload();
   };

@@ -10,7 +10,10 @@ import {
   ArrowLeft,
   Highlighter,
   Share2,
+  Monitor,
 } from 'lucide-react';
+import { BibleProjector } from './BibleProjector';
+import { getStoredUsageMode, UsageModePreference } from '../utils/typography';
 
 export interface BibleVersionOption {
   id: string;
@@ -176,6 +179,10 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
   const [showBookPicker, setShowBookPicker] = useState<boolean>(false);
   const [testamentFilter, setTestamentFilter] = useState<'all' | 'ot' | 'nt'>('all');
+  const [isProjectorOpen, setIsProjectorOpen] = useState<boolean>(false);
+  const [projectorVerseNum, setProjectorVerseNum] = useState<number>(1);
+  const [usageMode, setUsageMode] = useState<UsageModePreference>(() => getStoredUsageMode());
+  const hasAutoProjectedRef = useRef<boolean>(false);
   const highlightedVerseRef = useRef<HTMLDivElement | null>(null);
 
   const versionInfo = useMemo(
@@ -247,8 +254,24 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       }
     };
     window.addEventListener('hymnal-bible-settings-change', handleBibleSettingsChange);
+
+    const handleGlobalSettingsChange = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.usageMode === 'projector' || detail?.usageMode === 'personal') {
+        const nextMode = detail.usageMode as UsageModePreference;
+        setUsageMode(nextMode);
+        if (nextMode === 'projector') {
+          hasAutoProjectedRef.current = false;
+        } else {
+          setIsProjectorOpen(false);
+        }
+      }
+    };
+    window.addEventListener('hymnal-settings-change', handleGlobalSettingsChange);
+
     return () => {
       window.removeEventListener('hymnal-bible-settings-change', handleBibleSettingsChange);
+      window.removeEventListener('hymnal-settings-change', handleGlobalSettingsChange);
     };
   }, []);
 
@@ -256,6 +279,26 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   const safeChapterIdx =
     currentBook && chapterIdx < currentBook.chapters.length ? chapterIdx : 0;
   const currentVerses = currentBook ? currentBook.chapters[safeChapterIdx] || [] : [];
+
+  // Auto-open Bible Projector when entering Bible reader in Projector Mode
+  useEffect(() => {
+    if (
+      usageMode === 'projector' &&
+      !isLoading &&
+      !loadError &&
+      books &&
+      currentBook &&
+      currentVerses.length > 0 &&
+      !hasAutoProjectedRef.current
+    ) {
+      hasAutoProjectedRef.current = true;
+      const startVerse = highlightedVerse
+        ? Math.max(1, Math.min(currentVerses.length, highlightedVerse))
+        : 1;
+      setProjectorVerseNum(startVerse);
+      setIsProjectorOpen(true);
+    }
+  }, [usageMode, isLoading, loadError, books, currentBook, currentVerses.length, highlightedVerse]);
 
   // Smoothly scroll jumped/searched verse into view once chapter renders
   useEffect(() => {
@@ -273,6 +316,10 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     setSelectedVerses([]);
     setSearchResults(null);
     setShowBookPicker(false);
+    if (usageMode === 'projector') {
+      setProjectorVerseNum(1);
+      setIsProjectorOpen(true);
+    }
   };
 
   const handleSelectChapter = (chIdx: number) => {
@@ -281,6 +328,10 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     setSelectedVerses([]);
     setSearchResults(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (usageMode === 'projector') {
+      setProjectorVerseNum(1);
+      setIsProjectorOpen(true);
+    }
   };
 
   const handlePrevChapter = () => {
@@ -337,12 +388,17 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
       if (matchedBookIdx >= 0) {
         const targetBook = books[matchedBookIdx];
         const ch = Math.max(0, Math.min(targetBook.chapters.length - 1, parseInt(chapStr, 10) - 1));
+        const targetVerse = verseStr ? parseInt(verseStr, 10) : null;
         setBookIdx(matchedBookIdx);
         setChapterIdx(ch);
-        setHighlightedVerse(verseStr ? parseInt(verseStr, 10) : null);
+        setHighlightedVerse(targetVerse);
         setSelectedVerses([]);
         setSearchResults(null);
         setShowBookPicker(false);
+        if (usageMode === 'projector') {
+          setProjectorVerseNum(targetVerse || 1);
+          setIsProjectorOpen(true);
+        }
         return;
       }
     }
@@ -376,6 +432,13 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
   };
 
   const handleToggleMarkVerse = (verseNum: number) => {
+    if (usageMode === 'projector') {
+      setProjectorVerseNum(verseNum);
+      setHighlightedVerse(verseNum);
+      setSelectedVerses([]);
+      setIsProjectorOpen(true);
+      return;
+    }
     setIsCopied(false);
     setIsShared(false);
     setSelectedVerses((prev) => {
@@ -461,6 +524,30 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
     (vNum) => Boolean(savedHighlights[`${bookIdx}-${safeChapterIdx}-${vNum}`])
   );
 
+  const handleOpenProjector = (startVerse?: number) => {
+    if (!currentBook || currentVerses.length === 0) return;
+    const candidate =
+      startVerse ??
+      (selectedVerses.length > 0 ? Math.min(...selectedVerses) : highlightedVerse ?? 1);
+    const clampedVerse = Math.max(1, Math.min(currentVerses.length, candidate));
+    setProjectorVerseNum(clampedVerse);
+    setHighlightedVerse(clampedVerse);
+    setSelectedVerses([]);
+    setSelectionNotice(null);
+    setIsProjectorOpen(true);
+  };
+
+  const handleProjectorNavigate = (
+    nextBookIdx: number,
+    nextChapterIdx: number,
+    nextVerseNum: number
+  ) => {
+    setBookIdx(nextBookIdx);
+    setChapterIdx(nextChapterIdx);
+    setProjectorVerseNum(nextVerseNum);
+    setHighlightedVerse(nextVerseNum);
+  };
+
   const filteredBooks = useMemo(() => {
     if (!books) return [];
     return books
@@ -500,8 +587,20 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             </div>
           </div>
 
-          {/* Bible Version Selector */}
-          <div className="flex items-center gap-2">
+          {/* Bible Version Selector & Projector Launch */}
+          <div className="flex flex-wrap items-center gap-2">
+            {currentBook && currentVerses.length > 0 && !isLoading && !loadError && (
+              <button
+                type="button"
+                onClick={() => handleOpenProjector()}
+                className="h-10 px-3.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-xs font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-1.5 transition-colors"
+                title="Project one verse at a time in order"
+              >
+                <Monitor className="w-3.5 h-3.5 text-amber-900 dark:text-amber-400" />
+                <span>Projector</span>
+              </button>
+            )}
+
             <label htmlFor="bible-version-select" className="text-xs text-stone-500 dark:text-stone-400">
               Version
             </label>
@@ -707,11 +806,16 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                   key={`${m.bookIndex}-${m.chapterIndex}-${m.verseIndex}`}
                   type="button"
                   onClick={() => {
+                    const targetVerse = m.verseIndex + 1;
                     setBookIdx(m.bookIndex);
                     setChapterIdx(m.chapterIndex);
-                    setHighlightedVerse(m.verseIndex + 1);
+                    setHighlightedVerse(targetVerse);
                     setSelectedVerses([]);
                     setSearchResults(null);
+                    if (usageMode === 'projector') {
+                      setProjectorVerseNum(targetVerse);
+                      setIsProjectorOpen(true);
+                    }
                   }}
                   className="w-full text-left py-3 hover:bg-stone-50 dark:hover:bg-stone-800/40 px-2 rounded-lg transition-colors"
                 >
@@ -741,7 +845,7 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                 {currentBook.name} {safeChapterIdx + 1}
               </h3>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
-                {versionInfo.fullName} · {currentVerses.length} verses · Tap up to {MAX_SELECTED_VERSES} verses to highlight, copy, or share
+                {versionInfo.fullName} · {currentVerses.length} verses · Tap a verse to highlight, project, copy, or share
               </p>
             </div>
           </header>
@@ -891,8 +995,17 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
                 )}
               </div>
 
-              {/* Copy & Share Actions */}
+              {/* Project, Copy & Share Actions */}
               <div className="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => handleOpenProjector(Math.min(...selectedVerses))}
+                  className="h-9 px-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5 transition-colors"
+                >
+                  <Monitor className="w-3.5 h-3.5 text-amber-900 dark:text-amber-400" />
+                  <span>Project</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleCopySelected}
@@ -932,6 +1045,19 @@ export const BibleReader: React.FC<BibleReaderProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Full-Screen Single-Verse Bible Projector Mode */}
+      {isProjectorOpen && books && currentBook && currentVerses.length > 0 && (
+        <BibleProjector
+          books={books}
+          bookIdx={bookIdx}
+          chapterIdx={safeChapterIdx}
+          verseNum={projectorVerseNum}
+          versionLabel={versionInfo.label}
+          onNavigate={handleProjectorNavigate}
+          onClose={() => setIsProjectorOpen(false)}
+        />
       )}
     </div>
   );

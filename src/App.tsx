@@ -234,7 +234,7 @@ export default function App() {
 
             {/* Hymn Cards Grid */}
             {filteredHymns.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(225px,1fr))] gap-2.5 sm:gap-3">
                 {filteredHymns.map((hymn) => (
                   <HymnCard
                     key={hymn.id}

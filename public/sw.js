@@ -4,7 +4,7 @@
  * without requiring an internet connection.
  */
 
-const CACHE_NAME = 'kristu-mu-nyimbo-v7';
+const CACHE_NAME = 'kristu-mu-nyimbo-v10';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -68,6 +68,20 @@ self.addEventListener('fetch', (event) => {
 
   // Ignore non-http schemes (e.g. chrome-extension:)
   if (!url.protocol.startsWith('http')) return;
+
+  // Never cache or intercept Vite dev server modules, source files, or versioned dep chunks
+  if (
+    url.origin === self.location.origin &&
+    (url.pathname.startsWith('/src/') ||
+      url.pathname.startsWith('/node_modules/') ||
+      url.pathname.startsWith('/@') ||
+      url.pathname.endsWith('.tsx') ||
+      url.pathname.endsWith('.ts') ||
+      url.searchParams.has('v') ||
+      url.searchParams.has('t'))
+  ) {
+    return;
+  }
 
   // 1. Navigation requests (Opening/reopening app, refreshing pages)
   if (event.request.mode === 'navigate') {

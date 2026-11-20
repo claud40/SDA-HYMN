@@ -209,3 +209,38 @@ export const applyColumnSpacing = (spacing: ColumnSpacingPreference) => {
     );
   }
 };
+
+export type UsageModePreference = 'personal' | 'projector';
+
+const USAGE_MODE_STORAGE_KEY = 'hymnal_usage_mode';
+
+export const getStoredUsageMode = (): UsageModePreference => {
+  if (typeof window === 'undefined') return 'personal';
+  try {
+    const saved = localStorage.getItem(USAGE_MODE_STORAGE_KEY);
+    if (saved === 'projector' || saved === 'personal') {
+      return saved;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return 'personal';
+};
+
+export const applyUsageMode = (mode: UsageModePreference) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.hymnUsageMode = mode;
+  }
+  try {
+    localStorage.setItem(USAGE_MODE_STORAGE_KEY, mode);
+  } catch {
+    // ignore storage errors
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('hymnal-settings-change', {
+        detail: { usageMode: mode },
+      })
+    );
+  }
+};

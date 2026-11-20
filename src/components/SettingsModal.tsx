@@ -59,9 +59,18 @@ import {
   COLUMN_SPACING_CONFIG,
   getStoredColumnSpacing,
   applyColumnSpacing,
+  UsageModePreference,
+  getStoredUsageMode,
+  applyUsageMode,
 } from '../utils/typography';
 
-export type { ThemePreference, DefaultTextSize, DefaultFontFamily, LineSpacingPreference };
+export type {
+  ThemePreference,
+  DefaultTextSize,
+  DefaultFontFamily,
+  LineSpacingPreference,
+  UsageModePreference,
+};
 export type AutoScrollSpeed = 'slow' | 'normal' | 'fast';
 export type AppLanguage = HymnalLanguageId;
 
@@ -128,6 +137,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   });
   const [columnSpacing, setColumnSpacing] = useState<ColumnSpacingPreference>(() => {
     return getStoredColumnSpacing();
+  });
+  const [usageMode, setUsageMode] = useState<UsageModePreference>(() => {
+    return getStoredUsageMode();
   });
 
   const activeLangConfig = getHymnalLanguageConfig(activeLanguage);
@@ -214,6 +226,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setDefaultFontFamily((localStorage.getItem('hymnal_font_family') as DefaultFontFamily) || 'serif');
       setIsBoldText(localStorage.getItem('hymnal_bold_text') === 'true');
       setColumnSpacing(getStoredColumnSpacing());
+      setUsageMode(getStoredUsageMode());
       setBibleVersion(localStorage.getItem('hymnal_bible_version') || 'kjv');
       setBibleHighlightCount(getStoredBibleHighlightCount());
       setAutoScrollEnabled(localStorage.getItem('hymnal_autoscroll_enabled') === 'true');
@@ -315,6 +328,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     applyColumnSpacing(spacing);
     showFeedback(
       `Column spacing set to: ${COLUMN_SPACING_CONFIG[spacing].label} (${COLUMN_SPACING_CONFIG[spacing].desc})`
+    );
+  };
+
+  // App Usage Mode (Personal/Mobile vs Projector Mode for Bible & Hymns)
+  const handleSelectUsageMode = (mode: UsageModePreference) => {
+    setUsageMode(mode);
+    applyUsageMode(mode);
+    showFeedback(
+      mode === 'projector'
+        ? 'Projector Mode enabled — Bible verses & Hymn stanzas will open in slide projection'
+        : 'Mobile / Personal Mode selected (Default)'
     );
   };
 
@@ -423,6 +447,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setColumnSpacing('medium');
     applyColumnSpacing('medium');
 
+    setUsageMode('personal');
+    applyUsageMode('personal');
+
     setBibleVersion('kjv');
     try {
       localStorage.setItem('hymnal_bible_version', 'kjv');
@@ -444,6 +471,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           autoScrollSpeed: 'normal',
           keepScreenAwake: false,
           columnSpacing: 'medium',
+          usageMode: 'personal',
         },
       })
     );
@@ -842,6 +870,78 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <div className="text-[10px] text-stone-500 dark:text-stone-400">Follow Device</div>
                     </div>
                   </button>
+                </div>
+
+                {/* Usage Mode: Mobile/Personal (Default) vs Projector Mode */}
+                <div className="pt-4 mt-4 border-t border-stone-200/80 dark:border-stone-800 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                        <Monitor className="w-4 h-4 text-amber-800 dark:text-amber-400" />
+                        <span>Display &amp; Projection Mode (Hymns &amp; Bible)</span>
+                      </div>
+                      <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+                        Choose Personal / Mobile mode for reading on your own device, or Projector Mode to present Bible verses and Hymn stanzas as full-screen slides.
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-stone-400 font-mono shrink-0">
+                      {usageMode === 'projector' ? 'Projector' : 'Mobile (Default)'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectUsageMode('personal')}
+                      className={`p-3.5 rounded-2xl border text-left flex flex-col gap-2 transition-all cursor-pointer ${
+                        usageMode === 'personal'
+                          ? 'border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 ring-2 ring-amber-800/20 shadow-xs'
+                          : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Smartphone className="w-4 h-4 text-amber-800 dark:text-amber-400" />
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-900/10 dark:bg-amber-400/15 text-amber-900 dark:text-amber-300">
+                            Default
+                          </span>
+                        </div>
+                        {usageMode === 'personal' && <Check className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold">Mobile / Personal Mode</div>
+                        <div className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">
+                          Standard scrolling view for reading hymns &amp; Bible on your device
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSelectUsageMode('projector')}
+                      className={`p-3.5 rounded-2xl border text-left flex flex-col gap-2 transition-all cursor-pointer ${
+                        usageMode === 'projector'
+                          ? 'border-amber-800 bg-amber-50/80 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 ring-2 ring-amber-800/20 shadow-xs'
+                          : 'border-stone-200 dark:border-stone-800 bg-stone-50/50 dark:bg-stone-800/60 text-stone-700 dark:text-stone-300 hover:border-stone-300 dark:hover:border-stone-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Monitor className="w-4 h-4 text-amber-800 dark:text-amber-400" />
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-stone-200/80 dark:bg-stone-700 text-stone-700 dark:text-stone-200">
+                            Church Slide
+                          </span>
+                        </div>
+                        {usageMode === 'projector' && <Check className="w-3.5 h-3.5 text-amber-800 dark:text-amber-400" />}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold">Projector Mode</div>
+                        <div className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5">
+                          Opens both Bible verses &amp; Hymn stanzas automatically in full-screen slides
+                        </div>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </section>
             )}
